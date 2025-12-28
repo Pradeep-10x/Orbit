@@ -1,0 +1,3 @@
+ controller me we write about what we can/have to do with the specific Segmet..
+
+ eg- Post - create,delete,view etc to we create logic for all this
