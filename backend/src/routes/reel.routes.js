@@ -1,6 +1,6 @@
 import express from "express";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
-import { upload } from "../middlewares/multer.middleware.js ";
+import { upload } from "../middlewares/multer.middleware.js";
 import { createReel, getReels,deleteReel } from "../controllers/reel.controller.js";
 
 const router = express.Router();

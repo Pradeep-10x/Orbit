@@ -4,6 +4,7 @@ import cors from "cors"
 dotenv.config();
 import path from "path"
 import cookieParser from "cookie-parser"
+import { ApiError } from "./utils/ApiError.js"
 import userRouter from "./routes/user.routes.js"
 import postRouter from "./routes/post.routes.js"
 import feedRouter from "./routes/feed.routes.js"
@@ -38,6 +39,42 @@ app.use("/api/v1/message", messageRouter);
 app.use("/api/v1/reel", reelRouter);
 app.use("/api/v1/story", storyRouter);
 
+ //Global error Handeling
+app.use((err, req, res, next) => {
+  if (err instanceof ApiError) {
+    return res.status(err.statusCode).json({
+      success: false,
+      message: err.message,
+      errors: err.errors,
+      data: null
+    });
+  }
 
+  // multer errors
+  if (err.name === 'MulterError') {
+    return res.status(400).json({
+      success: false,
+      message: err.message || "File upload error",
+      data: null
+    });
+  }
+
+  // Default eror
+  console.error("Unhandled error:", err);
+  return res.status(500).json({
+    success: false,
+    message: "Internal server error",
+    data: null
+  });
+});
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: "Route not found",
+    data: null
+  });
+});
 
 export {app}

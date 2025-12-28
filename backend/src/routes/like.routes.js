@@ -4,11 +4,11 @@ import { verifyJWT } from '../middlewares/auth.middleware.js';
 
 const router = Router();
 
-router.route('post/:postId').post(verifyJWT, likeUnlikePost);
-router.route('post/:postId').get(getPostLikes);
+router.route('/post/:postId').post(verifyJWT, likeUnlikePost);
+router.route('/post/:postId').get(getPostLikes);
 
-router.route('reel/:reelId').post(verifyJWT, likeUnlikeReel);
-router.route('reel/:reelId').get(getReelLikes);
+router.route('/reel/:reelId').post(verifyJWT, likeUnlikeReel);
+router.route('/reel/:reelId').get(getReelLikes);
 
 router.route("/story/:storyId").post(verifyJWT,likeUnlikeStory)
 router.route("/story/:storyId").get(getStoryLikes)

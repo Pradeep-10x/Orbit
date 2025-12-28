@@ -19,10 +19,20 @@ const storySchema = new mongoose.Schema(
       required: true
     },
 
+    likesCount: {
+      type: Number,
+      default: 0
+    },
+
+    isDeleted: {
+      type: Boolean,
+      default: false
+    },
+
     createdAt: {
       type: Date,
       default: Date.now,
-      expires: 60 * 60 * 24 // 24 hours (TTL)
+      expires: 86400 // 24 hours in seconds (TTL)
     }
   }
 );

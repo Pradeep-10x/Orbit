@@ -2,7 +2,17 @@
   io.on("connection", (socket) => {
 
     socket.on("call:start", ({ to, offer }) => {
-      const target = onlineUsers.get(to);
+      if (!to || !offer) {
+        socket.emit("call:error", { message: "Invalid call parameters" });
+        return;
+      }
+      
+      if (typeof to !== "string" && typeof to !== "object") {
+        socket.emit("call:error", { message: "Invalid user ID" });
+        return;
+      }
+      
+      const target = onlineUsers.get(to.toString());
       if (target) {
         io.to(target).emit("call:incoming", {
           from: socket.id,
@@ -12,15 +22,26 @@
     });
 
     socket.on("call:answer", ({ to, answer }) => {
-      io.to(to).emit("call:answer", { answer });
+      if (!to || !answer) {
+        socket.emit("call:error", { message: "Invalid answer parameters" });
+        return;
+      }
+      io.to(to.toString()).emit("call:answer", { answer });
     });
 
     socket.on("call:ice", ({ to, candidate }) => {
-      io.to(to).emit("call:ice", { candidate });
+      if (!to || !candidate) {
+        socket.emit("call:error", { message: "Invalid ICE candidate" });
+        return;
+      }
+      io.to(to.toString()).emit("call:ice", { candidate });
     });
 
     socket.on("call:end", ({ to }) => {
-      io.to(to).emit("call:end");
+      if (!to) {
+        return;
+      }
+      io.to(to.toString()).emit("call:end");
     });
 
   });

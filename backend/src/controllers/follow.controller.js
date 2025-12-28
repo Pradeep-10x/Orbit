@@ -32,7 +32,7 @@ const followUnfollowUser = asyncHandler(async (req, res) => {
     });
 
     await User.findByIdAndUpdate(targetUserId, {
-      $inc: { followersCount: -1 }
+      $inc: { followerCount: -1 }
     });
 
     return res.status(200).json(
@@ -51,7 +51,7 @@ const followUnfollowUser = asyncHandler(async (req, res) => {
   });
 
   await User.findByIdAndUpdate(targetUserId, {
-    $inc: { followersCount: +1 }
+    $inc: { followerCount: +1 }
   });
 const notification = await Notification.create({
         user: targetUserId,

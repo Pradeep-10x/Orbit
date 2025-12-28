@@ -4,7 +4,7 @@ import registerCallEvents from "./call.socket.js";
  const initSocket = (server) => {
   const io = new Server(server, {
     cors: {
-      origin: "*",
+      origin: process.env.CORS_ORIGIN || "*",
       credentials: true
     }
   });

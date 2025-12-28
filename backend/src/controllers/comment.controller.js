@@ -12,7 +12,7 @@ import {Follow} from '../models/follow.model.js';
 
 
 const createPostComment = asyncHandler(async (req, res) => {
-const { userId } = req.user._id
+const userId = req.user._id;
 const {content} = req.body;
 const {postId} = req.params;
 if(!content || content.trim() === ''){
@@ -44,7 +44,7 @@ const notification = await Notification.create({
 });
 
 const createReelComment = asyncHandler(async (req, res) => {
-const { userId } = req.user._id
+const userId = req.user._id;
 const {content} = req.body;
 const {reelId} = req.params;
 if(!content || content.trim() === ''){

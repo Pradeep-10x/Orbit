@@ -1,8 +1,5 @@
 import mongoose from "mongoose";
 const { Schema} = mongoose;
-import { Post } from "./post.model.js";
-import { User } from "./user.model.js";
-import { Reel } from "./reel.model.js";
 
 const likeSchema= new Schema({
      post : {
@@ -30,7 +27,9 @@ const likeSchema= new Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
         required: true,
+        index: true,
      },
     }, { timestamps: true });
+
 
 export const Like = mongoose.model("Like", likeSchema);

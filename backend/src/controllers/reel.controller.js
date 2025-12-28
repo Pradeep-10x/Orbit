@@ -7,6 +7,7 @@ import { Notification } from "../models/notification.model.js";
 import { emitToUser } from '../utils/socketEmitters.js';
 import {uploadonCloudinary} from '../utils/cloudinary.js';
 import {v2 as cloudinary} from 'cloudinary';
+import { Reel } from '../models/reel.model.js';
 
 
 const createReel = asyncHandler(async (req, res) => {
@@ -31,13 +32,25 @@ const createReel = asyncHandler(async (req, res) => {
    const followerIds = await Follow.find({ following: req.user._id })
         .distinct("follower");
     
-    const notification = await Notification.create({
-            user: { $in: followerIds },
-            fromUser: req.user._id,
-            type: 'reel',
-        });
+    const filteredFollowerIds = followerIds.filter(
+      id => id.toString() !== req.user._id.toString()
+    );
     
-      emitToUser(req, { $in: followerIds }, "notification:new", notification);
+    if (filteredFollowerIds.length > 0) {
+      const notifications = filteredFollowerIds.map((followerId) => ({
+        user: followerId,
+        fromUser: req.user._id,
+        type: "reel",
+        reel: reel._id,
+      }));
+    
+      const createdNotifications = await Notification.insertMany(notifications);
+    
+      // Emit notifications to online users
+      filteredFollowerIds.forEach((followerId, index) => {
+        emitToUser(req, followerId, "notification:new", createdNotifications[index]);
+      });
+    }
    return res.status(201).json(new ApiResponse(201, reel, "Reel created successfully"));
 })
 

@@ -1,7 +1,7 @@
 import { Post } from "../models/post.model.js";
 import {User} from '../models/user.model.js';
 import { Notification } from "../models/notification.model.js";
-import { emitToUser } from '../utils/socketEmitters.js';
+import { emitToUser, emitToUsers } from '../utils/socketEmitters.js';
 import { Follow } from "../models/follow.model.js";
 import {uploadonCloudinary} from '../utils/cloudinary.js';
 import {v2 as cloudinary} from 'cloudinary';
@@ -44,18 +44,32 @@ dotenv.config();
       mediaType
     });
 
-      const followerIds = await Follow.find({ following: req.user._id })
-        .distinct("follower");
+    const followerIds = await Follow.find({
+      following: req.user._id
+    }).distinct("follower");
     
-    const notification = await Notification.create({
-            user: { $in: followerIds },
-            fromUser: req.user._id,
-            type: 'post',
-        });
+    const filteredFollowerIds = followerIds.filter(
+      id => id.toString() !== req.user._id.toString()
+    );
     
-      emitToUser(req, { $in: followerIds }, "notification:new", notification);
+    if (filteredFollowerIds.length > 0) {
+      const notifications = filteredFollowerIds.map((followerId) => ({
+        user: followerId,
+        fromUser: req.user._id,
+        type: "post",
+        post: post._id,
+      }));
     
-    return res.status(201).json(new ApiResponse(200,post,"Post created successfully"));
+      const createdNotifications = await Notification.insertMany(notifications);
+    
+      // Emit notifications to online users
+      filteredFollowerIds.forEach((followerId, index) => {
+        emitToUser(req, followerId, "notification:new", createdNotifications[index]);
+      });
+    }
+    
+    
+    return res.status(201).json(new ApiResponse(201,post,"Post created successfully"));
  });
  
  const getUserPosts = asyncHandler(async (req, res) => {

@@ -34,11 +34,11 @@ const userSchema = new Schema({
     avatar:{
         type: String,
     },
-    FollowerCount : {
+    followerCount : {
         type : Number,
         default : 0,
     },
-    FollowingCount : {
+    followingCount : {
         type : Number,
         default : 0,
     },

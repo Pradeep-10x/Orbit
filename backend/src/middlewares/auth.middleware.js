@@ -16,13 +16,13 @@ const decodedToken=jwt.verify(token,process.env.JWT_SECRET)
 const user = await User.findById(decodedToken?._id).select("-password -refreshToken")
 if(!user)
 {
-    throw new ApiError(401,"not found haha")
+    throw new ApiError(401,"Invalid access token")
 }
 
 req.user = user;
 next();
 }catch(err){  
-    console.log("JWT verification error", err);
+     throw new ApiError(401,"Invalid or expired token")
 }}
 );
 

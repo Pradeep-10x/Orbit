@@ -8,6 +8,7 @@ import { emitToUser } from '../utils/socketEmitters.js';
 import {Notification} from '../models/notification.model.js'; 
 import { Reel } from '../models/reel.model.js';
 import {Story} from '../models/story.model.js';
+import mongoose from 'mongoose';
 
 const likeUnlikePost = asyncHandler(async (req, res) => {
     const {postId} = req.params;
@@ -62,7 +63,7 @@ const likeUnlikeReel = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Reel not found");
     }
 
-    const existingLike = await Like.findOne({ post: reelId, user: userId });
+    const existingLike = await Like.findOne({ reel: reelId, user: userId });
     
     if (existingLike) {
         await existingLike.deleteOne();
@@ -169,7 +170,7 @@ const likeUnlikeStory = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Story not found");
     }
 
-    const existingLike = await Like.findOne({ post: storyId, user: userId });
+    const existingLike = await Like.findOne({ story: storyId, user: userId });
     //unlike post
     if (existingLike) {
         await existingLike.deleteOne();

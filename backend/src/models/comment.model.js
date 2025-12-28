@@ -1,8 +1,5 @@
 import mongoose from "mongoose";
 const { Schema} = mongoose;
-import { Post } from "./post.model.js";
-import { User } from "./user.model.js";
-import { Reel } from "./reel.model.js";
 
 const commentSchema= new Schema({
      post : {
@@ -36,6 +33,16 @@ const commentSchema= new Schema({
         default: false,
      },
 }, { timestamps: true });
+
+commentSchema.pre('validate', function(next) {
+  if (!this.post && !this.reel) {
+    next(new Error('Comment must be associated with either a post or a reel'));
+  } else if (this.post && this.reel) {
+    next(new Error('Comment cannot be associated with both a post and a reel'));
+  } else {
+    next();
+  }
+});
 
 export const Comment = mongoose.model("Comment", commentSchema);
  

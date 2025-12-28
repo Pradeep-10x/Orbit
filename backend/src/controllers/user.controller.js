@@ -1,9 +1,9 @@
 import {User} from '../models/user.model.js';
 import {uploadonCloudinary} from '../utils/cloudinary.js';
+import {v2 as cloudinary} from 'cloudinary';
 import {asyncHandler} from '../utils/asyncHandler.js';
 import {ApiError} from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
-import { containsEmoji } from "../utils/noEmoji.js";
 import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
 dotenv.config();
@@ -33,6 +33,10 @@ const registerUser=asyncHandler(async(req, res) => {
     
    if (!fullName || !email || !password || !username || !bio) {
   throw new ApiError(400, "All fields are required");
+}
+
+if(password.length < 6){
+    throw new ApiError(400, "Password must be at least 6 characters long");
 }
 
 const existedUser = await User.findOne({
@@ -73,6 +77,10 @@ const user= await User.findOne({
     $or: [{email}, {username: username.toLowerCase()}]
    
 })
+
+if(!user){
+    throw new ApiError(401, "User not found");
+}
 const isPasswordMatch=await user.isPasswordCorrect(password);
 if(!isPasswordMatch){
     throw new ApiError(401, "Invalid credentials");
@@ -82,7 +90,8 @@ const loggedInUser=await User.findById(user._id).select("-password -refreshToken
 
  const options = {
     httpOnly: true,
-    
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax"
 };
 
 return res.status(200).cookie("accessToken", accessToken, options).cookie("refreshToken", refreshToken, options).json(new ApiResponse(200, loggedInUser, "User logged in successfully"));
@@ -97,7 +106,8 @@ const logoutUser=asyncHandler(async(req,res)=>{
     });
     const options={
         httpOnly:true,
-        secure:true
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax"
     }
 
     return res.status(200).clearCookie("accessToken",options).clearCookie("refreshToken",options).json(new ApiResponse(200,null,"User logged out successfully"))
@@ -124,7 +134,8 @@ const refreshaccessToken=asyncHandler(async(req,res)=>{
         }
         const options = {
             httpOnly: true,
-            
+            secure: process.env.NODE_ENV === "production",
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax"
         }
         const {accessToken, refreshToken:newrefreshToken} = await generateAccessAndRefereshTokens(user._id);
         return res.status(200).cookie("accessToken", accessToken, options).cookie("refreshToken", newrefreshToken, options).json(new ApiResponse(200, {
@@ -139,6 +150,15 @@ accessToken, refreshToken: newrefreshToken
 
 const changePassword=asyncHandler(async(req,res)=>{
     const{oldPassword,newPassword}=req.body;
+    
+    if(!oldPassword || !newPassword){
+        throw new ApiError(400, "Old password and new password are required");
+    }
+    
+    if(newPassword.length < 6){
+        throw new ApiError(400, "Password must be at least 6 characters long");
+    }
+    
     const user=await User.findById(req.user._id);
     const isPasswordMatch=await user.isPasswordCorrect(oldPassword);
     if(!isPasswordMatch){
@@ -157,7 +177,7 @@ const updateUserDetails = asyncHandler(async (req, res) => {
   if (!fullName && !bio && !email && !username) {
     throw new ApiError(400, "At least one field is required to update");
   }
-  const existedname= User.findOne({
+  const existedname= await User.findOne({
     $or: [{email}, {username: username.toLowerCase()}]
    })
    if(existedname){
@@ -206,7 +226,7 @@ const UpdateAvatar=asyncHandler(async(req,res)=>{
         .split(".")[0];
     
       await cloudinary.uploader.destroy(publicId, {
-        resource_type: post.mediaType === "video" ? "video" : "image"
+        resource_type: "image"
       });
     }
     

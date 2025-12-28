@@ -2,7 +2,6 @@ import {v2 as cloudinary} from "cloudinary"
 import dotenv from "dotenv"
 dotenv.config()
 import fs from "fs"
-import {upload} from "../middlewares/multer.middleware.js"
 
 
 cloudinary.config({
@@ -27,9 +26,9 @@ const uploadonCloudinary=async(localFilePath, resourceType) =>{
     catch(err){
         console.log("Cloudinary upload error:", err);
       
-             if (fs.existsSync(req.file.path)) {
-    fs.unlinkSync(req.file.path);
-  }
+        if (fs.existsSync(localFilePath)) {
+            fs.unlinkSync(localFilePath);
+        }
 
         return null;
     }

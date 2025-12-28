@@ -38,13 +38,25 @@ const createStory = asyncHandler(async (req, res) => {
    const followerIds = await Follow.find({ following: req.user._id })
         .distinct("follower");
     
-    const notification = await Notification.create({
-            user: { $in: followerIds },
-            fromUser: req.user._id,
-            type: 'story',
-        });
+    const filteredFollowerIds = followerIds.filter(
+      id => id.toString() !== req.user._id.toString()
+    );
     
-      emitToUser(req, { $in: followerIds }, "notification:new", notification);
+    if (filteredFollowerIds.length > 0) {
+      const notifications = filteredFollowerIds.map((followerId) => ({
+        user: followerId,
+        fromUser: req.user._id,
+        type: "story",
+        story: story._id,
+      }));
+    
+      const createdNotifications = await Notification.insertMany(notifications);
+    
+      // Emit notifications to online users
+      filteredFollowerIds.forEach((followerId, index) => {
+        emitToUser(req, followerId, "notification:new", createdNotifications[index]);
+      });
+    }
    return res.status(201).json(new ApiResponse(201, story, "Story created successfully"));
 })
 
@@ -54,7 +66,7 @@ const getStories = asyncHandler(async (req, res) => {
     const limit = Number(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const stories = await Story.find({  user: userId, isDeleted: false })
+    const stories = await Story.find({ user: userId, isDeleted: false })
       .populate("user", "username avatar")
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -75,8 +87,7 @@ const deleteStory = asyncHandler(async (req, res) => {
         throw new ApiError(403, "You are not authorized to delete this story");
     }
 
-    story.isDeleted = true;
-    await story.save();
+    await Story.findByIdAndDelete(storyId);
 
     res.status(200).json(new ApiResponse(200, null, "Story deleted successfully"));
 });
