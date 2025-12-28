@@ -1,3 +1,0 @@
-model me we write what fields a specific segmet will contain 
- 
-eg- Like field is about who liked what....user nd post
