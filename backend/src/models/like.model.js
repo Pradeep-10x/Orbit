@@ -11,6 +11,21 @@ const likeSchema= new Schema({
         default: null,
         index: true,
      },
+
+       reel : {   
+         type: mongoose.Schema.Types.ObjectId,
+         ref: "Reel",
+         default: null,
+         index: true,
+     },
+
+     story : {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Story",
+        default: null,
+        index: true,
+     },
+     
      user :{
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",

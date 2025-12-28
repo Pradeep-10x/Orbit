@@ -56,11 +56,12 @@ if(!reel){
     throw new ApiError(404, "Reel not found");
 }
 const comment = await Comment.create({
-    post: reelId,
+    reel: reelId,
     user: userId,
     content,
 });
 
+await Reel.findByIdAndUpdate(reelId, { $inc: { commentsCount: 1 } });
 const notification = await Notification.create({
         user: reel.user,
         fromUser: userId,
@@ -112,7 +113,7 @@ const getReelComment= asyncHandler(async (req, res) => {
         const skip = (page - 1) * limit;
 
     const comments= await Comment.find({
-        post:reelId,
+        reel:reelId,
         isDeleted:false,
     }).populate("user", "username avatar")
       .sort({createdAt:-1})
@@ -138,11 +139,18 @@ const deleteComment = asyncHandler(async (req, res) => {
 
   comment.isDeleted = true;
   await comment.save();
-
-  await Post.findByIdAndUpdate(comment.post, {
+   
+  const post = await Post.exists({_id: comment.post, isDeleted: false});
+  if (post) {
+    await Post.findByIdAndUpdate(comment.post, {
     $inc: { commentsCount: -1 }
   });
-
+}
+  else{
+    await Reel.findByIdAndUpdate(comment.reel, {
+    $inc: { commentsCount: -1 }
+  }); 
+  }
   res.status(200).json(new ApiResponse(200, null, "Comment deleted"));
 });
 
