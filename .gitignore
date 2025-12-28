@@ -22,11 +22,14 @@ Thumbs.db
 *.swo
 
 # Temp files
-src/public/temp/*
-!src/public/temp/.gitkeep
-src/controllers/summary.txt
-src/models/summary.txt
-src/readme.txt
+backend/src/public/temp/*
+!backend/src/public/temp/.gitkeep
+
+# Project specific files to ignore
+backend/src/controllers/summary.txt
+backend/src/models/summary.txt
+backend/src/readme.txt
+backend/flowchart/
 
 # Build output
 dist/
