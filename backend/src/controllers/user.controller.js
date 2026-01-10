@@ -49,7 +49,7 @@ let avatar = "";
 
 if (req.files?.avatar && req.files.avatar[0]) {
     const avatarlocalpath = req.files.avatar[0].path;
-    const uploaded = await uploadonCloudinary(avatarlocalpath);
+    const uploaded = await uploadonCloudinary(avatarlocalpath, "image");
     avatar = uploaded?.url || "";
 }
 
@@ -213,12 +213,11 @@ const UpdateAvatar=asyncHandler(async(req,res)=>{
         throw new ApiError(400,"Avatar file is required")
     }
     const filepath=req.file.path;
-    const uploaded=await uploadonCloudinary (filepath);
+    const uploaded=await uploadonCloudinary(filepath, "image");
     if(!uploaded?.url){
         throw new ApiError(500,"Avatar upload failed, please try again")
     }
-      // 4️⃣ Delete old avatar from Cloudinary (if exists)
-        const existingUser = await User.findById(req.user._id);
+    const existingUser = await User.findById(req.user._id);
   if (existingUser?.avatar) {
       const publicId = existingUser.avatar
         .split("/")

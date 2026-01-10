@@ -93,9 +93,22 @@ const getPostComment= asyncHandler(async (req, res) => {
       .skip(skip)
       .limit(limit);
 
+    const totalCount = await Comment.countDocuments({
+        post:postId,
+        isDeleted:false,
+    });
+
+    const totalPages = Math.ceil(totalCount / limit);
+    const hasNext = page < totalPages;
+    const hasPrev = page > 1;
+
       return res.status(200).json(
         new ApiResponse(200, {
           comments,
+          page,
+          totalPages,
+          hasNext,
+          hasPrev
         })
       );
 })
@@ -120,9 +133,22 @@ const getReelComment= asyncHandler(async (req, res) => {
       .skip(skip)
       .limit(limit);
 
+    const totalCount = await Comment.countDocuments({
+        reel:reelId,
+        isDeleted:false,
+    });
+
+    const totalPages = Math.ceil(totalCount / limit);
+    const hasNext = page < totalPages;
+    const hasPrev = page > 1;
+
       return res.status(200).json(
         new ApiResponse(200, {
           comments,
+          page,
+          totalPages,
+          hasNext,
+          hasPrev
         })
       );
 })

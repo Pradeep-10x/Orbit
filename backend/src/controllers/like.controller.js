@@ -20,7 +20,6 @@ const likeUnlikePost = asyncHandler(async (req, res) => {
     }
 
     const existingLike = await Like.findOne({ post: postId, user: userId });
-    //unlike post
     if (existingLike) {
         await existingLike.deleteOne();
 
@@ -31,7 +30,6 @@ const likeUnlikePost = asyncHandler(async (req, res) => {
         );
     }
 
-    // like post    
     await Like.create({
         post: postId,
         user: userId,
@@ -121,10 +119,18 @@ const likes= await Like.find({
    .skip(skip)
    .limit(limit);
 
+const totalCount = await Like.countDocuments({ post: postId });
+const totalPages = Math.ceil(totalCount / limit);
+const hasNext = page < totalPages;
+const hasPrev = page > 1;
+
    return res.status(200).json(
      new ApiResponse(200, {
        likes,
        page,
+       totalPages,
+       hasNext,
+       hasPrev
      })
    );
 })  
@@ -153,10 +159,18 @@ const likes= await Like.find({
    .skip(skip)
    .limit(limit);
 
+const totalCount = await Like.countDocuments({ reel: reelId });
+const totalPages = Math.ceil(totalCount / limit);
+const hasNext = page < totalPages;
+const hasPrev = page > 1;
+
    return res.status(200).json(
      new ApiResponse(200, {
        likes,
        page,
+       totalPages,
+       hasNext,
+       hasPrev
      })
    );
 }) 
@@ -171,7 +185,6 @@ const likeUnlikeStory = asyncHandler(async (req, res) => {
     }
 
     const existingLike = await Like.findOne({ story: storyId, user: userId });
-    //unlike post
     if (existingLike) {
         await existingLike.deleteOne();
 
@@ -182,7 +195,6 @@ const likeUnlikeStory = asyncHandler(async (req, res) => {
         );
     }
 
-    // like story   
     await Like.create({
         story: storyId,
         user: userId,
@@ -228,10 +240,18 @@ const likes= await Like.find({
    .skip(skip)
    .limit(limit);
 
+const totalCount = await Like.countDocuments({ story: storyId });
+const totalPages = Math.ceil(totalCount / limit);
+const hasNext = page < totalPages;
+const hasPrev = page > 1;
+
    return res.status(200).json(
      new ApiResponse(200, {
        likes,
        page,
+       totalPages,
+       hasNext,
+       hasPrev
      })
    );
 })  

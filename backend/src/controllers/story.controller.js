@@ -52,7 +52,6 @@ const createStory = asyncHandler(async (req, res) => {
     
       const createdNotifications = await Notification.insertMany(notifications);
     
-      // Emit notifications to online users
       filteredFollowerIds.forEach((followerId, index) => {
         emitToUser(req, followerId, "notification:new", createdNotifications[index]);
       });
@@ -72,7 +71,18 @@ const getStories = asyncHandler(async (req, res) => {
       .skip(skip)
       .limit(limit);
 
-    res.status(200).json(new ApiResponse(200, stories));
+    const totalCount = await Story.countDocuments({ user: userId, isDeleted: false });
+    const totalPages = Math.ceil(totalCount / limit);
+    const hasNext = page < totalPages;
+    const hasPrev = page > 1;
+
+    res.status(200).json(new ApiResponse(200, {
+      stories,
+      page,
+      totalPages,
+      hasNext,
+      hasPrev
+    }));
 });
 
 const deleteStory = asyncHandler(async (req, res) => {

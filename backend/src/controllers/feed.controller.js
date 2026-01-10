@@ -14,11 +14,10 @@ import { Post } from "../models/post.model.js";
   const followingIds = await Follow.find({ follower: userId })
     .distinct("following");
 
-  followingIds.push(userId);
+  const userIds = [...followingIds, userId];
 
-  // 3️⃣ fetch posts
   const posts = await Post.find({
-    user: { $in: followingIds },
+    user: { $in: userIds },
     isDeleted: false
   })
     .sort({ createdAt: -1 })
@@ -26,10 +25,22 @@ import { Post } from "../models/post.model.js";
     .limit(limit)
     .populate("user", "username avatar isVerified");
 
+  const totalCount = await Post.countDocuments({
+    user: { $in: userIds },
+    isDeleted: false
+  });
+
+  const totalPages = Math.ceil(totalCount / limit);
+  const hasNext = page < totalPages;
+  const hasPrev = page > 1;
+
   return res.status(200).json(
     new ApiResponse(200, {
       posts,
-      page
+      page,
+      totalPages,
+      hasNext,
+      hasPrev
     })
   );
 });

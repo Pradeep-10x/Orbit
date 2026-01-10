@@ -46,7 +46,6 @@ const createReel = asyncHandler(async (req, res) => {
     
       const createdNotifications = await Notification.insertMany(notifications);
     
-      // Emit notifications to online users
       filteredFollowerIds.forEach((followerId, index) => {
         emitToUser(req, followerId, "notification:new", createdNotifications[index]);
       });
@@ -66,7 +65,18 @@ const getReels = asyncHandler(async (req, res) => {
       .skip(skip)
       .limit(limit);
 
-    res.status(200).json(new ApiResponse(200, reels));
+    const totalCount = await Reel.countDocuments({ user: userId, isDeleted: false });
+    const totalPages = Math.ceil(totalCount / limit);
+    const hasNext = page < totalPages;
+    const hasPrev = page > 1;
+
+    res.status(200).json(new ApiResponse(200, {
+      reels,
+      page,
+      totalPages,
+      hasNext,
+      hasPrev
+    }));
 });
 
 const deleteReel = asyncHandler(async (req, res) => {
@@ -83,7 +93,6 @@ const deleteReel = asyncHandler(async (req, res) => {
 
     reel.isDeleted = true;
     await reel.save();
-   // delete the video from Cloudinary
     const publicId = reel.videoUrl.split('/').pop().split('.')[0];
     await cloudinary.uploader.destroy(publicId, { resource_type: "video" });
 

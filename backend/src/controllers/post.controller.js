@@ -1,7 +1,7 @@
 import { Post } from "../models/post.model.js";
 import {User} from '../models/user.model.js';
 import { Notification } from "../models/notification.model.js";
-import { emitToUser, emitToUsers } from '../utils/socketEmitters.js';
+import { emitToUser } from '../utils/socketEmitters.js';
 import { Follow } from "../models/follow.model.js";
 import {uploadonCloudinary} from '../utils/cloudinary.js';
 import {v2 as cloudinary} from 'cloudinary';
@@ -62,7 +62,6 @@ dotenv.config();
     
       const createdNotifications = await Notification.insertMany(notifications);
     
-      // Emit notifications to online users
       filteredFollowerIds.forEach((followerId, index) => {
         emitToUser(req, followerId, "notification:new", createdNotifications[index]);
       });
@@ -88,16 +87,22 @@ dotenv.config();
     .limit(limit)
     .populate("user", "username avatar");
 
-  const totalPosts = await Post.countDocuments({
+  const totalCount = await Post.countDocuments({
     user: userId,
     isDeleted: false
   });
+
+  const totalPages = Math.ceil(totalCount / limit);
+  const hasNext = page < totalPages;
+  const hasPrev = page > 1;
 
   return res.status(200).json(
     new ApiResponse(200, {
       posts,
       page,
-      totalPosts,
+      totalPages,
+      hasNext,
+      hasPrev
     })
   );
 });

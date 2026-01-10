@@ -23,7 +23,6 @@ const followUnfollowUser = asyncHandler(async (req, res) => {
     follower: currentUserId,
     following: targetUserId
   });
-  //unfollow user
   if (existingFollow) {
     await existingFollow.deleteOne();
 
@@ -40,7 +39,6 @@ const followUnfollowUser = asyncHandler(async (req, res) => {
     );
   }
 
-  // follow user
   await Follow.create({
     follower: currentUserId,
     following: targetUserId
@@ -81,10 +79,18 @@ const getFollowers = asyncHandler(async (req, res) => {
       .limit(limit)
       .populate("follower", "username avatar");
 
+    const totalCount = await Follow.countDocuments({ following: userId });
+    const totalPages = Math.ceil(totalCount / limit);
+    const hasNext = page < totalPages;
+    const hasPrev = page > 1;
+
       return res.status(200).json(
         new ApiResponse(200, {
           followers,
           page,
+          totalPages,
+          hasNext,
+          hasPrev
         })
       );
 });
@@ -102,10 +108,18 @@ const getFollowing = asyncHandler(async(req,res) => {
       .limit(limit)
       .populate("following", "username avatar");
 
+    const totalCount = await Follow.countDocuments({ follower: userId });
+    const totalPages = Math.ceil(totalCount / limit);
+    const hasNext = page < totalPages;
+    const hasPrev = page > 1;
+
       return res.status(200).json(
         new ApiResponse(200, {
           following,
           page,
+          totalPages,
+          hasNext,
+          hasPrev
         })
       );
 });
