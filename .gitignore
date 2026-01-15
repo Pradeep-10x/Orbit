@@ -26,11 +26,7 @@ backend/src/public/temp/*
 !backend/src/public/temp/.gitkeep
 
 # Project specific files to ignore
-backend/src/controllers/summary.txt
-backend/src/models/summary.txt
-backend/src/readme.txt
-backend/flowchart/
-
+backend/Progress.txt
 # Build output
 dist/
 build/

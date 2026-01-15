@@ -5,7 +5,6 @@ dotenv.config();
 import path from "path"
 import cookieParser from "cookie-parser"
 import { ApiError } from "./utils/ApiError.js"
-import { generalLimiter } from "./middlewares/rateLimiter.middleware.js"
 import userRouter from "./routes/user.routes.js"
 import postRouter from "./routes/post.routes.js"
 import feedRouter from "./routes/feed.routes.js"
@@ -28,7 +27,6 @@ app.use(cors({
 
 app.use(xssClean());
 app.use(mongoSanitize());
-app.use(generalLimiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(cookieParser());
 app.use(express.urlencoded({extended : true, limit: '10mb'}));

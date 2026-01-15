@@ -5,13 +5,13 @@ import {
   markRead,
   deleteNotifications
 } from "../controllers/notification.controller.js";
-import { writeLimiter } from "../middlewares/rateLimiter.middleware.js";
+
 
 const router = express.Router();
 
 router.route("/").get(verifyJWT, getNotifications);
-router.route("/delete").delete(verifyJWT, writeLimiter, deleteNotifications);
-router.route("/read").put(verifyJWT, writeLimiter, markRead);
+router.route("/delete").delete(verifyJWT, deleteNotifications);
+router.route("/read").put(verifyJWT, markRead);
 
 
 export default router;
