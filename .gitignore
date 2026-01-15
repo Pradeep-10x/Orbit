@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Temp files
+backend/src/public/temp/*
+!backend/src/public/temp/.gitkeep
+
+# Project specific files to ignore
+backend/src/controllers/summary.txt
+backend/src/models/summary.txt
+backend/src/readme.txt
+backend/flowchart/
+
+# Build output
+dist/
+build/
