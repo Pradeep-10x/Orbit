@@ -14,6 +14,7 @@ import notificationRouter from"./routes/notification.routes.js"
 import messageRouter from"./routes/message.routes.js"
 import reelRouter from"./routes/reel.routes.js"
 import storyRouter from"./routes/story.routes.js"
+import { xssSanitizer,mongoSanitizer } from './middlewares/Sanitize.js';
 
 const app=express()
 
@@ -27,6 +28,9 @@ app.use(express.json({ limit: '10mb' }));
 app.use(cookieParser());
 app.use(express.urlencoded({extended : true, limit: '10mb'}));
 app.use(express.static(path.resolve("./public")));
+
+app.use(xssSanitizer);
+app.use(mongoSanitizer);
 
 app.use("/api/v1/user", userRouter);
 app.use("/api/v1/post", postRouter);
