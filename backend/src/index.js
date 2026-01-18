@@ -7,7 +7,7 @@ import { app } from "./app.js";
 import connectDB from "./db/index.js";
 
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8000;
 
 
 const server = http.createServer(app);
