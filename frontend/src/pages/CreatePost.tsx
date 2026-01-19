@@ -22,7 +22,7 @@ export default function CreatePostPage() {
             setPreview(url);
         }
     };
-
+   // start here
     const handleSubmit = async () => {
         if (!file) return;
 
