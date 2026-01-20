@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import cors from "cors"
 dotenv.config();
 import path from "path"
+import { fileURLToPath } from 'url';
 import cookieParser from "cookie-parser"
 import { ApiError } from "./utils/ApiError.js"
 import userRouter from "./routes/user.routes.js"
@@ -15,11 +16,20 @@ import messageRouter from"./routes/message.routes.js"
 import reelRouter from"./routes/reel.routes.js"
 import storyRouter from"./routes/story.routes.js"
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app=express()
 
+// Health check endpoint for Render
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
 app.use(cors({
-    origin:process.env.CORS_ORIGIN,
+    origin: process.env.NODE_ENV === 'production' 
+      ? process.env.CORS_ORIGIN?.split(',') 
+      : process.env.CORS_ORIGIN,
     credentials:true,
 }))
 
@@ -27,7 +37,10 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(cookieParser());
 app.use(express.urlencoded({extended : true, limit: '10mb'}));
-app.use(express.static(path.resolve("./public")));
+app.use(express.static(path.join(__dirname, "../public")));
+
+// Trust proxy for Render (needed for rate limiting and secure cookies)
+app.set('trust proxy', 1);
 
 
 app.use("/api/v1/user", userRouter);

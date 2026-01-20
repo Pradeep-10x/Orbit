@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-dotenv.config({ path: "../.env" });
+dotenv.config();
 
 import http from "http";
 import { initSocket } from "./socket/index.js";
