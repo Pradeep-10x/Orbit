@@ -1,73 +1,88 @@
-# React + TypeScript + Vite
+# ORBIT Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A production-level frontend for ORBIT - A real-time digital orbit where creators, communities, and conversations move around you.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- 🎨 **Modern Design System** - Custom space/orbit themed UI with purple, cyan, and pink gradients
+- 🌌 **Animated Background** - Continuously moving orbit rings and particles
+- ⚡ **Performance Optimized** - Built with Vite, React 19, and Framer Motion
+- 📱 **Responsive** - Mobile-first design that works on all devices
+- 🎭 **Smooth Animations** - Production-ready animations and transitions
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **React 19** - Latest React with modern features
+- **TypeScript** - Type-safe development
+- **Vite** - Lightning-fast build tool
+- **Tailwind CSS v4** - Utility-first CSS framework
+- **Framer Motion** - Production-ready motion library
+- **Lucide React** - Beautiful icon library
 
-## Expanding the ESLint configuration
+## Getting Started
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Install Dependencies
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Development
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run dev
 ```
+
+The app will be available at `http://localhost:5173`
+
+### Build
+
+```bash
+npm run build
+```
+
+### Preview Production Build
+
+```bash
+npm run preview
+```
+
+## Project Structure
+
+```
+frontend/
+├── src/
+│   ├── components/
+│   │   └── landing/
+│   │       ├── Header.tsx
+│   │       ├── OrbitBackground.tsx
+│   │       ├── HeroSection.tsx
+│   │       ├── FeaturesSection.tsx
+│   │       └── CTASection.tsx
+│   ├── pages/
+│   │   └── Landing.tsx
+│   ├── styles/
+│   ├── lib/
+│   └── main.tsx
+├── index.html
+└── package.json
+```
+
+## Design System
+
+### Colors
+
+- **Primary Purple**: `#8b5cf6`
+- **Cyan Accent**: `#06b6d4`
+- **Pink Accent**: `#ec4899`
+- **Dark Background**: `#0a0a0f`
+
+### Typography
+
+- **Heading Font**: Space Grotesk
+- **Body Font**: Inter
+
+## License
+
+MIT
+

@@ -23,6 +23,11 @@ const storySchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
       expires: 60 * 60 * 24 // 24 hours (TTL)
+    },
+
+    isDeleted: {
+      type: Boolean,
+      default: false
     }
   }
 );

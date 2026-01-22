@@ -1,5 +1,10 @@
 import dotenv from "dotenv";
-dotenv.config();
+import { fileURLToPath } from "url";
+import path from "path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 import http from "http";
 import { initSocket } from "./socket/index.js";
@@ -7,7 +12,7 @@ import { app } from "./app.js";
 import connectDB from "./db/index.js";
 
 
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT || 5000;
 
 
 const server = http.createServer(app);

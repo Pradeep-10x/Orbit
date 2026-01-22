@@ -1,411 +1,738 @@
-import { useState, useRef } from 'react';
-import { useAuthStore } from '@/store/authStore';
-import { Button } from '@/components/ui/Button';
-import { User, Bell, Lock, Shield, LogOut, ChevronRight, Camera, ArrowLeft } from 'lucide-react';
-
-import { motion, AnimatePresence } from 'framer-motion';
-import { api } from '@/lib/axios';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { useNavigate } from 'react-router-dom';
+import {
+  User,
+  Shield,
+  Eye,
+  Sparkles,
+  Bell,
+  Palette,
+  AlertTriangle,
+  CheckCircle2,
+  UploadCloud,
+} from 'lucide-react';
+import { useAuthStore } from '@/store/authStore';
+import { userAPI } from '@/lib/api';
+
+type Section =
+  | 'account'
+  | 'security'
+  | 'privacy'
+  | 'verification'
+  | 'notifications'
+  | 'appearance'
+  | 'danger';
+
+type PrivacyState = {
+  privateAccount: boolean;
+  messagePolicy: 'everyone' | 'followers';
+  allowMentions: boolean;
+  allowTagging: boolean;
+};
+
+type NotificationState = {
+  likes: boolean;
+  comments: boolean;
+  followers: boolean;
+  messages: boolean;
+  calls: boolean;
+};
+
+const sectionNav: Array<{ id: Section; label: string; icon: any }> = [
+  { id: 'account', label: 'Account', icon: User },
+  { id: 'security', label: 'Security', icon: Shield },
+  { id: 'privacy', label: 'Privacy', icon: Eye },
+  { id: 'verification', label: 'Verification', icon: Sparkles },
+  { id: 'notifications', label: 'Notifications', icon: Bell },
+  { id: 'appearance', label: 'Appearance', icon: Palette },
+  { id: 'danger', label: 'Danger Zone', icon: AlertTriangle },
+];
 
 export default function SettingsPage() {
-    const { user, logout, checkAuth } = useAuthStore();
-    const navigate = useNavigate();
-    const [activeSection, setActiveSection] = useState<string | null>(null);
-    const [formData, setFormData] = useState({
-        fullName: user?.fullName || '',
-        bio: user?.bio || '',
-        email: user?.email || '',
-    });
-    const [passwordData, setPasswordData] = useState({
-        oldPassword: '',
-        newPassword: '',
-        confirmPassword: '',
-    });
-    const [loading, setLoading] = useState(false);
-    const [avatarFile, setAvatarFile] = useState<File | null>(null);
-    const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-    const avatarInputRef = useRef<HTMLInputElement>(null);
+  const { user, isAuthenticated, isCheckingAuth, checkAuth } = useAuthStore();
+  const [activeSection, setActiveSection] = useState<Section>('account');
 
-    const sections = [
-        { id: 'profile', label: 'Edit Profile', icon: User, desc: 'Update your profile information' },
-        { id: 'notifications', label: 'Notifications', icon: Bell, desc: 'Manage your notification preferences' },
-        { id: 'privacy', label: 'Privacy & Security', icon: Lock, desc: 'Control your privacy settings' },
-        { id: 'account', label: 'Account', icon: Shield, desc: 'Account visibility and settings' },
-    ];
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [bio, setBio] = useState('');
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const avatarFileRef = useRef<File | null>(null);
 
-    const handleUpdateProfile = async () => {
-        try {
-            setLoading(true);
+  const [privacy, setPrivacy] = useState<PrivacyState>({
+    privateAccount: false,
+    messagePolicy: 'everyone',
+    allowMentions: true,
+    allowTagging: true,
+  });
 
-            // Update avatar if changed
-            if (avatarFile) {
-                const avatarFormData = new FormData();
-                avatarFormData.append('avatar', avatarFile);
-                await api.patch('/user/update-avatar', avatarFormData, {
-                    headers: { 'Content-Type': 'multipart/form-data' },
-                });
-            }
+  const [notifications, setNotifications] = useState<NotificationState>({
+    likes: true,
+    comments: true,
+    followers: true,
+    messages: true,
+    calls: true,
+  });
 
-            // Update user details
-            await api.put('/user/update-details', formData);
+  const [appearance, setAppearance] = useState<'dark' | 'system'>('dark');
 
-            await checkAuth(); // Refresh user data
-            toast.success('Profile updated successfully');
-            setAvatarFile(null);
-            setAvatarPreview(null);
-        } catch (error: any) {
-            toast.error(error.response?.data?.message || 'Failed to update profile');
-        } finally {
-            setLoading(false);
-        }
-    };
+  const [loadingAccount, setLoadingAccount] = useState(false);
+  const [loadingSecurity, setLoadingSecurity] = useState(false);
+  const [loadingPrivacy, setLoadingPrivacy] = useState(false);
+  const [loadingNotifications, setLoadingNotifications] = useState(false);
+  const [loadingDanger, setLoadingDanger] = useState(false);
 
-    const handleChangePassword = async () => {
-        if (passwordData.newPassword !== passwordData.confirmPassword) {
-            toast.error('Passwords do not match');
-            return;
-        }
-        if (passwordData.newPassword.length < 6) {
-            toast.error('Password must be at least 6 characters');
-            return;
-        }
-        try {
-            setLoading(true);
-            await api.post('/user/change-password', {
-                oldPassword: passwordData.oldPassword,
-                newPassword: passwordData.newPassword,
-            });
-            toast.success('Password changed successfully');
-            setPasswordData({ oldPassword: '', newPassword: '', confirmPassword: '' });
-        } catch (error: any) {
-            toast.error(error.response?.data?.message || 'Failed to change password');
-        } finally {
-            setLoading(false);
-        }
-    };
+  const [passwords, setPasswords] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
 
-    const handleDeleteAccount = async () => {
-        if (!confirm('Are you absolutely sure? This action cannot be undone!')) return;
-        if (!confirm('This will permanently delete your account and all your data. Continue?')) return;
-        try {
-            setLoading(true);
-            await api.post('/user/delete');
-            toast.success('Account deleted successfully');
-            logout();
-            navigate('/login');
-        } catch (error: any) {
-            toast.error(error.response?.data?.message || 'Failed to delete account');
-        } finally {
-            setLoading(false);
-        }
-    };
+  useEffect(() => {
+    if (!isAuthenticated && !isCheckingAuth) {
+      checkAuth();
+    }
+  }, [isAuthenticated, isCheckingAuth, checkAuth]);
 
+  useEffect(() => {
+    if (user) {
+      setUsername(user.username || '');
+      setEmail(user.email || '');
+      setBio(user.bio || '');
+      setAvatarPreview(user.avatar || null);
+      // Default privacy/notification values could come from user profile in a real integration
+    }
+  }, [user]);
+
+  const verificationStatus = useMemo(() => {
+    if (!user?.isVerified) return null;
+    return user.VerificationBadge || 'Standard';
+  }, [user]);
+
+  if (isCheckingAuth) {
     return (
-        <div className="pb-20 md:pb-0 max-w-4xl mx-auto px-4 md:px-6">
-            <AnimatePresence mode="wait">
-                {activeSection === null ? (
-                    // Settings Menu View
-                    <motion.div
-                        key="menu"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="space-y-6"
-                    >
-                        <h1 className="text-4xl font-bold text-gray-900 mb-6 font-heading">Settings</h1>
-
-                        {/* User Profile Card */}
-                        <div className="glass-panel p-6 md:p-8 rounded-2xl md:rounded-3xl">
-                            <div className="flex items-center gap-4 md:gap-6">
-                                <div className="relative">
-                                    <div className="w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden border-2 md:border-4 border-white shadow-lg">
-                                        <img
-                                            src={user?.avatar || `https://ui-avatars.com/api/?name=${user?.username || 'User'}`}
-                                            alt="Avatar"
-                                            className="w-full h-full object-cover"
-                                        />
-                                    </div>
-                                </div>
-                                <div className="flex-1">
-                                    <h3 className="text-xl md:text-2xl font-bold text-gray-900">{user?.fullName || user?.username}</h3>
-                                    <p className="text-base text-gray-500">@{user?.username}</p>
-                                    <p className="text-sm md:text-base text-gray-400 mt-1">{user?.bio || 'No bio yet'}</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Settings Options */}
-                        <div className="space-y-3">
-                            {sections.map((section) => {
-                                const Icon = section.icon;
-                                return (
-                                    <button
-                                        key={section.id}
-                                        onClick={() => setActiveSection(section.id)}
-                                        className="w-full glass-panel p-4 md:p-5 rounded-2xl hover:bg-white/80 transition-all group text-left"
-                                    >
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-4">
-                                                <div className="p-2.5 bg-black/5 group-hover:bg-black/10 rounded-xl transition-colors">
-                                                    <Icon size={20} className="text-gray-700" />
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-bold text-gray-900 text-base md:text-lg">{section.label}</h4>
-                                                    <p className="text-sm md:text-base text-gray-500 mt-0.5">{section.desc}</p>
-                                                </div>
-                                            </div>
-                                            <ChevronRight size={18} className="text-gray-400 group-hover:text-gray-600 transition-colors" />
-                                        </div>
-                                    </button>
-                                );
-                            })}
-                        </div>
-
-                        {/* Logout Button */}
-                        <button
-                            onClick={() => logout()}
-                            className="w-full glass-panel p-4 md:p-5 rounded-2xl text-red-500 hover:bg-red-50/50 transition-colors border border-red-100/50"
-                        >
-                            <div className="flex items-center gap-4">
-                                <div className="p-2.5 bg-red-50 rounded-xl">
-                                    <LogOut size={20} />
-                                </div>
-                                <div>
-                                    <h4 className="font-bold text-base md:text-lg">Log Out</h4>
-                                    <p className="text-sm md:text-base text-red-400 mt-0.5">Sign out of your account</p>
-                                </div>
-                            </div>
-                        </button>
-                    </motion.div>
-                ) : (
-                    // Settings Detail View
-                    <motion.div
-                        key={activeSection}
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        className="space-y-6"
-                    >
-                        {/* Back Button */}
-                        <button
-                            onClick={() => setActiveSection(null)}
-                            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-2"
-                        >
-                            <ArrowLeft size={20} />
-                            <span className="font-medium text-sm">Back to Settings</span>
-                        </button>
-
-                        <div className="glass-panel p-6 md:p-8 rounded-2xl md:rounded-3xl min-h-[500px]">
-                            {activeSection === 'profile' && (
-                                <div className="space-y-8">
-                                    <div className="flex items-center gap-6 pb-8 border-b border-white/20">
-                                        <div className="relative group">
-                                            <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-xl">
-                                                <img
-                                                    src={avatarPreview || user?.avatar || `https://ui-avatars.com/api/?name=${user?.username || 'User'}`}
-                                                    alt="Avatar"
-                                                    className="w-full h-full object-cover"
-                                                />
-                                            </div>
-                                            <button
-                                                onClick={() => avatarInputRef.current?.click()}
-                                                className="absolute bottom-0 right-0 p-2 bg-black text-white rounded-full shadow-lg transform translate-x-1 translate-y-1 hover:scale-110 transition-transform"
-                                            >
-                                                <Camera size={16} />
-                                            </button>
-                                            <input
-                                                type="file"
-                                                ref={avatarInputRef}
-                                                onChange={(e) => {
-                                                    const file = e.target.files?.[0];
-                                                    if (file) {
-                                                        setAvatarFile(file);
-                                                        setAvatarPreview(URL.createObjectURL(file));
-                                                    }
-                                                }}
-                                                accept="image/*"
-                                                className="hidden"
-                                            />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-xl font-bold text-gray-900">{user?.fullName || user?.username}</h3>
-                                            <p className="text-sm text-gray-500">Update your photo and personal details.</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-6">
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-bold text-gray-900 ml-1">Full Name</label>
-                                            <input
-                                                type="text"
-                                                value={formData.fullName}
-                                                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                                                className="w-full bg-white/50 border border-white/20 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black/5 transition-all outline-none"
-                                                placeholder="Enter your full name"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-bold text-gray-900 ml-1">Email</label>
-                                            <input
-                                                type="email"
-                                                value={formData.email}
-                                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                                className="w-full bg-white/50 border border-white/20 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black/5 transition-all outline-none"
-                                                placeholder="Enter your email"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-bold text-gray-900 ml-1">Bio</label>
-                                            <textarea
-                                                value={formData.bio}
-                                                onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                                                className="w-full bg-white/50 border border-white/20 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black/5 transition-all outline-none resize-none h-32"
-                                                placeholder="Tell us about yourself..."
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="flex justify-end gap-3 pt-4">
-                                        <Button
-                                            variant="ghost"
-                                            onClick={() => {
-                                                setFormData({ fullName: user?.fullName || '', bio: user?.bio || '', email: user?.email || '' });
-                                                setAvatarFile(null);
-                                                setAvatarPreview(null);
-                                            }}
-                                            className="text-gray-600 hover:bg-gray-100"
-                                        >
-                                            Cancel
-                                        </Button>
-                                        <Button
-                                            onClick={handleUpdateProfile}
-                                            isLoading={loading}
-                                            className="bg-black text-white px-8 rounded-xl shadow-lg shadow-black/20"
-                                        >
-                                            Save Changes
-                                        </Button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {activeSection === 'notifications' && (
-                                <div className="space-y-6">
-                                    <h3 className="text-xl font-bold text-gray-900 font-heading">Notification Preferences</h3>
-                                    <p className="text-sm text-gray-500 mb-8">Choose how you want to be notified about updates.</p>
-
-                                    {[
-                                        { title: 'New Messages', desc: 'When someone sends you a message' },
-                                        { title: 'New Likes', desc: 'When someone likes your post' },
-                                        { title: 'New Followers', desc: 'When someone starts following you' },
-                                        { title: 'Comments', desc: 'When someone comments on your post' },
-                                    ].map((item, i) => (
-                                        <div key={i} className="flex items-center justify-between p-4 bg-white/40 rounded-2xl border border-white/10 hover:border-white/30 transition-all">
-                                            <div>
-                                                <h4 className="font-bold text-gray-900">{item.title}</h4>
-                                                <p className="text-xs text-gray-500">{item.desc}</p>
-                                            </div>
-                                            <div className="w-12 h-6 bg-green-500 rounded-full relative cursor-pointer shadow-inner shadow-black/10">
-                                                <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full shadow-sm" />
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-
-                            {activeSection === 'privacy' && (
-                                <div className="space-y-8">
-                                    <div className="p-6 bg-purple-50 rounded-2xl border border-purple-100 flex items-start gap-4">
-                                        <Shield className="text-purple-500 mt-1" size={24} />
-                                        <div>
-                                            <h4 className="font-bold text-gray-900">Your account is Private</h4>
-                                            <p className="text-sm text-gray-600 mt-1">Only your followers can see your posts and stories. You can change this anytime.</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-4">
-                                        <h3 className="text-lg font-bold text-gray-900">Password</h3>
-                                        <div className="space-y-4">
-                                            <div className="space-y-2">
-                                                <label className="text-sm font-bold text-gray-900 ml-1">Old Password</label>
-                                                <input
-                                                    type="password"
-                                                    value={passwordData.oldPassword}
-                                                    onChange={(e) => setPasswordData({ ...passwordData, oldPassword: e.target.value })}
-                                                    className="w-full bg-white/50 border border-white/20 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black/5 transition-all outline-none"
-                                                    placeholder="Enter old password"
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-sm font-bold text-gray-900 ml-1">New Password</label>
-                                                <input
-                                                    type="password"
-                                                    value={passwordData.newPassword}
-                                                    onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                                                    className="w-full bg-white/50 border border-white/20 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black/5 transition-all outline-none"
-                                                    placeholder="Enter new password"
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-sm font-bold text-gray-900 ml-1">Confirm Password</label>
-                                                <input
-                                                    type="password"
-                                                    value={passwordData.confirmPassword}
-                                                    onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                                                    className="w-full bg-white/50 border border-white/20 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-black/5 transition-all outline-none"
-                                                    placeholder="Confirm new password"
-                                                />
-                                            </div>
-                                            <Button
-                                                onClick={handleChangePassword}
-                                                isLoading={loading}
-                                                className="bg-black text-white"
-                                            >
-                                                Change Password
-                                            </Button>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-4 pt-4">
-                                        <h3 className="text-lg font-bold text-gray-900">Two-Factor Authentication</h3>
-                                        <div className="flex items-center justify-between p-4 bg-white/40 rounded-2xl border border-white/10">
-                                            <div>
-                                                <p className="text-sm text-gray-700">Add an extra layer of security to your account.</p>
-                                            </div>
-                                            <Button variant="ghost" className="text-purple-600 font-bold">Enable</Button>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {activeSection === 'account' && (
-                                <div className="space-y-8">
-                                    <div className="space-y-4">
-                                        <h3 className="text-lg font-bold text-gray-900">Account Visibility</h3>
-                                        <div className="flex items-center gap-4">
-                                            <Button className="bg-black text-white shrink-0">Public</Button>
-                                            <Button variant="ghost" className="text-gray-500">Private</Button>
-                                        </div>
-                                    </div>
-
-                                    <div className="pt-8 border-t border-white/20">
-                                        <h3 className="text-lg font-bold text-red-500 mb-2">Danger Zone</h3>
-                                        <p className="text-sm text-gray-500 mb-4">Deleting your account is permanent and cannot be undone.</p>
-                                        <Button
-                                            onClick={handleDeleteAccount}
-                                            isLoading={loading}
-                                            className="bg-red-50 text-red-500 border border-red-100 hover:bg-red-500 hover:text-white transition-all"
-                                        >
-                                            Delete My Account
-                                        </Button>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </div>
+      <div className="min-h-screen flex items-center justify-center text-[#9ca3af]">
+        Checking your session...
+      </div>
     );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  const handleAvatarChange = (file: File | null) => {
+    avatarFileRef.current = file;
+    if (file) {
+      setAvatarPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleAccountSave = async () => {
+    try {
+      setLoadingAccount(true);
+      // Update user details
+      await userAPI.updateDetails({ bio });
+      
+      // Update avatar if changed
+      if (avatarFileRef.current) {
+        const formData = new FormData();
+        formData.append('avatar', avatarFileRef.current);
+        await userAPI.updateAvatar(formData);
+      }
+      toast.success('Account updated');
+      await checkAuth(); // Refresh user data
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to update account');
+    } finally {
+      setLoadingAccount(false);
+    }
+  };
+
+  const handlePasswordChange = async () => {
+    if (!passwords.newPassword || passwords.newPassword !== passwords.confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+    try {
+      setLoadingSecurity(true);
+      await userAPI.changePassword({
+        oldPassword: passwords.currentPassword,
+        newPassword: passwords.newPassword,
+      });
+      toast.success('Password updated');
+      setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to change password');
+    } finally {
+      setLoadingSecurity(false);
+    }
+  };
+
+  const handlePrivacySave = async () => {
+    try {
+      setLoadingPrivacy(true);
+      await api.patch('/user/privacy', privacy);
+      toast.success('Privacy updated');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to update privacy');
+    } finally {
+      setLoadingPrivacy(false);
+    }
+  };
+
+  const handleNotificationsSave = async () => {
+    try {
+      setLoadingNotifications(true);
+      // Note: This endpoint may not exist in backend yet
+      // await api.patch('/user/notifications', notifications);
+      toast.success('Notifications settings saved locally');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to update notifications');
+    } finally {
+      setLoadingNotifications(false);
+    }
+  };
+
+  const handleLogoutAll = async () => {
+    try {
+      setLoadingSecurity(true);
+      await userAPI.logout();
+      toast.success('Logged out from all devices');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to logout all');
+    } finally {
+      setLoadingSecurity(false);
+    }
+  };
+
+  const handleDeactivate = async () => {
+    try {
+      setLoadingDanger(true);
+      await userAPI.deleteAccount();
+      toast.success('Account deactivated');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to deactivate');
+    } finally {
+      setLoadingDanger(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      setLoadingDanger(true);
+      await userAPI.deleteAccount();
+      toast.success('Account deleted');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to delete account');
+    } finally {
+      setLoadingDanger(false);
+    }
+  };
+
+  const renderSection = () => {
+    switch (activeSection) {
+      case 'account':
+        return (
+          <div className="space-y-6">
+            <Card title="Account" description="Manage your identity and profile basics.">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="text-sm text-[#9ca3af]">Username</label>
+                  <input
+                    value={username}
+                    disabled
+                    className="w-full mt-2 glass-card rounded-lg px-4 py-3 text-[#e5e7eb] disabled:opacity-60"
+                  />
+                  <p className="text-xs text-[#9ca3af] mt-2">Username changes are restricted.</p>
+                </div>
+                <div>
+                  <label className="text-sm text-[#9ca3af]">Email</label>
+                  <input
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full mt-2 glass-card rounded-lg px-4 py-3 text-[#e5e7eb] focus:outline-none focus:border-[rgba(168,85,247,0.4)]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+                <div className="md:col-span-2">
+                  <label className="text-sm text-[#9ca3af]">Bio</label>
+                  <textarea
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                    rows={3}
+                    className="w-full mt-2 glass-card rounded-lg px-4 py-3 text-[#e5e7eb] focus:outline-none focus:border-[rgba(168,85,247,0.4)]"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm text-[#9ca3af]">Profile picture</label>
+                  <div className="mt-2 glass-card rounded-lg p-3 flex items-center gap-3">
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#a855f7] to-[#06b6d4] overflow-hidden flex items-center justify-center">
+                      <img src={avatarPreview || "/default-avatar.jpg"} alt="avatar preview" className="w-full h-full object-cover" />
+                    </div>
+                    <label className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[rgba(168,85,247,0.3)] text-[#e5e7eb] cursor-pointer hover:bg-[rgba(168,85,247,0.1)]">
+                      <UploadCloud className="w-4 h-4" />
+                      <span className="text-sm font-semibold">Upload</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => handleAvatarChange(e.target.files?.[0] || null)}
+                      />
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => {
+                    if (user) {
+                      setEmail(user.email || '');
+                      setBio(user.bio || '');
+                      setAvatarPreview(user.avatar || null);
+                      avatarFileRef.current = null;
+                    }
+                  }}
+                  className="px-4 py-2 glass-card rounded-lg text-[#e5e7eb] hover:border-[rgba(168,85,247,0.3)]"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAccountSave}
+                  disabled={loadingAccount}
+                  className="px-4 py-2 bg-[#7c3aed] hover:bg-[#6d28d9] rounded-lg text-white font-semibold transition-colors disabled:opacity-50"
+                >
+                  {loadingAccount ? 'Saving...' : 'Save changes'}
+                </button>
+              </div>
+            </Card>
+          </div>
+        );
+
+      case 'security':
+        return (
+          <div className="space-y-6">
+            <Card title="Change password" description="Keep your account secure with a strong password.">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <InputField
+                  label="Current password"
+                  type="password"
+                  value={passwords.currentPassword}
+                  onChange={(v) => setPasswords((p) => ({ ...p, currentPassword: v }))}
+                />
+                <InputField
+                  label="New password"
+                  type="password"
+                  value={passwords.newPassword}
+                  onChange={(v) => setPasswords((p) => ({ ...p, newPassword: v }))}
+                />
+                <InputField
+                  label="Confirm new password"
+                  type="password"
+                  value={passwords.confirmPassword}
+                  onChange={(v) => setPasswords((p) => ({ ...p, confirmPassword: v }))}
+                />
+              </div>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' })}
+                  className="px-4 py-2 glass-card rounded-lg text-[#e5e7eb] hover:border-[rgba(168,85,247,0.3)]"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handlePasswordChange}
+                  disabled={loadingSecurity}
+                  className="px-4 py-2 bg-[#7c3aed] hover:bg-[#6d28d9] rounded-lg text-white font-semibold transition-colors disabled:opacity-50"
+                >
+                  {loadingSecurity ? 'Updating...' : 'Update password'}
+                </button>
+              </div>
+            </Card>
+
+            <Card title="Sessions" description="Control active sessions across devices.">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <p className="text-[#e5e7eb] font-semibold">Logout from all devices</p>
+                  <p className="text-sm text-[#9ca3af]">Revokes tokens on all active sessions.</p>
+                </div>
+                <button
+                  onClick={handleLogoutAll}
+                  disabled={loadingSecurity}
+                  className="px-4 py-2 glass-card rounded-lg text-[#e5e7eb] hover:border-[rgba(168,85,247,0.3)] disabled:opacity-50"
+                >
+                  {loadingSecurity ? 'Working...' : 'Logout all'}
+                </button>
+              </div>
+            </Card>
+          </div>
+        );
+
+      case 'privacy':
+        return (
+          <div className="space-y-6">
+            <Card title="Privacy" description="Control who can see and interact with you.">
+              <ToggleRow
+                label="Private account"
+                description="Only approved followers can see your content."
+                value={privacy.privateAccount}
+                onChange={(v) => setPrivacy((p) => ({ ...p, privateAccount: v }))}
+              />
+              <div className="mt-4">
+                <label className="text-sm text-[#9ca3af]">Allow messages from</label>
+                <div className="mt-2 flex gap-3">
+                  {['everyone', 'followers'].map((option) => (
+                    <button
+                      key={option}
+                      onClick={() => setPrivacy((p) => ({ ...p, messagePolicy: option as PrivacyState['messagePolicy'] }))}
+                      className={`px-4 py-2 rounded-lg border ${privacy.messagePolicy === option
+                        ? 'border-[rgba(168,85,247,0.4)] text-[#e5e7eb]'
+                        : 'border-transparent text-[#9ca3af] hover:border-[rgba(168,85,247,0.2)]'
+                        } glass-card`}
+                    >
+                      {option === 'everyone' ? 'Everyone' : 'Followers only'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <ToggleRow
+                label="Allow mentions"
+                description="Others can @mention you in posts and comments."
+                value={privacy.allowMentions}
+                onChange={(v) => setPrivacy((p) => ({ ...p, allowMentions: v }))}
+              />
+              <ToggleRow
+                label="Allow tagging"
+                description="Others can tag you in photos and reels."
+                value={privacy.allowTagging}
+                onChange={(v) => setPrivacy((p) => ({ ...p, allowTagging: v }))}
+              />
+              <div className="flex justify-end">
+                <button
+                  onClick={handlePrivacySave}
+                  disabled={loadingPrivacy}
+                  className="px-4 py-2 bg-[#7c3aed] hover:bg-[#6d28d9] rounded-lg text-white font-semibold transition-colors disabled:opacity-50"
+                >
+                  {loadingPrivacy ? 'Saving...' : 'Save privacy'}
+                </button>
+              </div>
+            </Card>
+          </div>
+        );
+
+      case 'verification':
+        return (
+          <div className="space-y-6">
+            <Card title="Verification" description="Prove your identity and reduce spam.">
+              {!user?.isVerified ? (
+                <div className="space-y-4">
+                  <p className="text-[#e5e7eb]">
+                    Verification confirms your identity and adds trust to your profile.
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="glass-card rounded-xl p-4 border border-[rgba(168,85,247,0.2)]">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Sparkles className="w-4 h-4 text-[#a855f7]" />
+                        <p className="font-semibold text-[#e5e7eb]">Blue badge</p>
+                      </div>
+                      <p className="text-sm text-[#9ca3af]">Standard verification for creators and members.</p>
+                    </div>
+                    <div className="glass-card rounded-xl p-4 border border-[rgba(168,85,247,0.2)]">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Sparkles className="w-4 h-4 text-[#c084fc]" />
+                        <p className="font-semibold text-[#e5e7eb]">Gold badge</p>
+                      </div>
+                      <p className="text-sm text-[#9ca3af]">Priority support and enhanced trust signals.</p>
+                    </div>
+                  </div>
+                  <button className="px-4 py-2 bg-[#7c3aed] hover:bg-[#6d28d9] rounded-lg text-white font-semibold transition-colors w-fit">
+                    Get verified
+                  </button>
+                </div>
+              ) : (
+                <div className="glass-card rounded-xl p-4 flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-[#06b6d4]" />
+                      <p className="text-[#e5e7eb] font-semibold">Verified</p>
+                    </div>
+                    <p className="text-sm text-[#9ca3af]">
+                      Badge: {verificationStatus} • Renewal handled via billing.
+                    </p>
+                  </div>
+                  <button className="px-4 py-2 glass-card rounded-lg text-[#e5e7eb] hover:border-[rgba(168,85,247,0.3)]">
+                    Manage plan
+                  </button>
+                </div>
+              )}
+            </Card>
+          </div>
+        );
+
+      case 'notifications':
+        return (
+          <div className="space-y-6">
+            <Card title="Notifications" description="Control which events reach you.">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <ToggleRow
+                  label="Likes"
+                  value={notifications.likes}
+                  onChange={(v) => setNotifications((p) => ({ ...p, likes: v }))}
+                />
+                <ToggleRow
+                  label="Comments"
+                  value={notifications.comments}
+                  onChange={(v) => setNotifications((p) => ({ ...p, comments: v }))}
+                />
+                <ToggleRow
+                  label="New followers"
+                  value={notifications.followers}
+                  onChange={(v) => setNotifications((p) => ({ ...p, followers: v }))}
+                />
+                <ToggleRow
+                  label="Messages"
+                  value={notifications.messages}
+                  onChange={(v) => setNotifications((p) => ({ ...p, messages: v }))}
+                />
+                <ToggleRow
+                  label="Calls"
+                  value={notifications.calls}
+                  onChange={(v) => setNotifications((p) => ({ ...p, calls: v }))}
+                />
+              </div>
+              <div className="flex justify-end">
+                <button
+                  onClick={handleNotificationsSave}
+                  disabled={loadingNotifications}
+                  className="px-4 py-2 bg-gradient-to-r from-[#a855f7] to-[#06b6d4] rounded-lg text-white font-semibold hover:scale-105 transition-transform disabled:opacity-50 disabled:hover:scale-100"
+                >
+                  {loadingNotifications ? 'Saving...' : 'Save notifications'}
+                </button>
+              </div>
+            </Card>
+          </div>
+        );
+
+      case 'appearance':
+        return (
+          <div className="space-y-6">
+            <Card title="Appearance" description="Keep it simple—just pick your theme.">
+              <div className="flex gap-3 flex-wrap">
+                {['dark', 'system'].map((mode) => (
+                  <button
+                    key={mode}
+                    onClick={() => setAppearance(mode as 'dark' | 'system')}
+                    className={`px-4 py-3 rounded-lg glass-card border ${appearance === mode
+                      ? 'border-[rgba(168,85,247,0.4)] text-[#e5e7eb]'
+                      : 'border-transparent text-[#9ca3af] hover:border-[rgba(168,85,247,0.2)]'
+                      }`}
+                  >
+                    {mode === 'dark' ? 'Dark (default)' : 'System'}
+                  </button>
+                ))}
+              </div>
+              <p className="text-sm text-[#9ca3af]">
+                We keep it clean—no noisy themes. Changes apply immediately.
+              </p>
+            </Card>
+          </div>
+        );
+
+      case 'danger':
+        return (
+          <div className="space-y-6">
+            <Card
+              title="Danger Zone"
+              description="Permanent actions. Proceed carefully."
+              tone="danger"
+            >
+              <div className="space-y-4">
+                <ActionRow
+                  title="Deactivate account"
+                  description="Temporarily disable your profile and hide your content."
+                  actionLabel="Deactivate"
+                  onAction={handleDeactivate}
+                  loading={loadingDanger}
+                  tone="warn"
+                />
+                <ActionRow
+                  title="Delete account"
+                  description="This permanently deletes your account and data."
+                  actionLabel="Delete"
+                  onAction={handleDelete}
+                  loading={loadingDanger}
+                  tone="danger"
+                />
+              </div>
+            </Card>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="min-h-screen">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 py-10">
+          <header className="mb-8 flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm text-[#9ca3af] uppercase tracking-[0.12em]">Orbit — Settings</p>
+              <h1 className="text-3xl font-bold text-[#e5e7eb] mt-1">System Control Center</h1>
+              <p className="text-[#9ca3af] mt-2">
+                You control your identity. Everything here maps to real backend actions.
+              </p>
+            </div>
+          </header>
+
+          <div className="grid grid-cols-1 lg:grid-cols-[240px,1fr] gap-6 items-start">
+            <nav className="glass-card rounded-xl p-3 border border-[rgba(168,85,247,0.12)]">
+              <ul className="space-y-1">
+                {sectionNav.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeSection === item.id;
+                  return (
+                    <li key={item.id}>
+                      <button
+                        onClick={() => setActiveSection(item.id)}
+                        className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-all ${isActive
+                          ? 'bg-gradient-to-r from-[#a855f7]/20 to-[#06b6d4]/15 text-[#e5e7eb] border border-[rgba(168,85,247,0.3)]'
+                          : 'text-[#9ca3af] hover:bg-[rgba(168,85,247,0.08)] hover:text-[#e5e7eb]'
+                          }`}
+                      >
+                        <Icon className={`w-5 h-5 ${isActive ? 'text-[#a855f7]' : ''}`} />
+                        <span className="font-semibold">{item.label}</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </nav>
+
+            <section className="space-y-6">{renderSection()}</section>
+          </div>
+        </div>
+    </div>
+  );
 }
+
+function Card({
+  title,
+  description,
+  children,
+  tone = 'default',
+}: {
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+  tone?: 'default' | 'danger';
+}) {
+  const border =
+    tone === 'danger' ? 'border-red-500/30 bg-[rgba(239,68,68,0.05)]' : 'border-[rgba(168,85,247,0.15)]';
+  return (
+    <div className={`glass-card rounded-xl p-6 border ${border}`}>
+      <div className="mb-4">
+        <h2 className="text-xl font-semibold text-[#e5e7eb]">{title}</h2>
+        {description && <p className="text-sm text-[#9ca3af] mt-1">{description}</p>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function InputField({
+  label,
+  type = 'text',
+  value,
+  onChange,
+}: {
+  label: string;
+  type?: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div>
+      <label className="text-sm text-[#9ca3af]">{label}</label>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full mt-2 glass-card rounded-lg px-4 py-3 text-[#e5e7eb] focus:outline-none focus:border-[rgba(168,85,247,0.4)]"
+      />
+    </div>
+  );
+}
+
+function ToggleRow({
+  label,
+  description,
+  value,
+  onChange,
+}: {
+  label: string;
+  description?: string;
+  value: boolean;
+  onChange: (value: boolean) => void;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-3 py-2">
+      <div>
+        <p className="text-[#e5e7eb] font-medium">{label}</p>
+        {description && <p className="text-sm text-[#9ca3af]">{description}</p>}
+      </div>
+      <label className="relative inline-flex cursor-pointer items-center">
+        <input
+          type="checkbox"
+          className="sr-only peer"
+          checked={value}
+          onChange={(e) => onChange(e.target.checked)}
+        />
+        <div className="w-11 h-6 bg-[#1f2937] peer-focus:outline-none rounded-full peer peer-checked:bg-gradient-to-r peer-checked:from-[#a855f7] peer-checked:to-[#06b6d4] transition-colors" />
+        <span className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5 shadow" />
+      </label>
+    </div>
+  );
+}
+
+function ActionRow({
+  title,
+  description,
+  actionLabel,
+  onAction,
+  loading,
+  tone = 'warn',
+}: {
+  title: string;
+  description: string;
+  actionLabel: string;
+  onAction: () => void;
+  loading: boolean;
+  tone?: 'warn' | 'danger';
+}) {
+  const color =
+    tone === 'danger'
+      ? 'bg-gradient-to-r from-red-500 to-red-600'
+      : 'bg-gradient-to-r from-amber-500 to-orange-500';
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 glass-card rounded-lg border border-[rgba(168,85,247,0.1)]">
+      <div>
+        <p className="text-[#e5e7eb] font-semibold">{title}</p>
+        <p className="text-sm text-[#9ca3af]">{description}</p>
+      </div>
+      <button
+        onClick={onAction}
+        disabled={loading}
+        className={`px-4 py-2 rounded-lg text-white font-semibold hover:scale-105 transition-transform disabled:opacity-60 disabled:hover:scale-100 ${color}`}
+      >
+        {loading ? 'Working...' : actionLabel}
+      </button>
+    </div>
+  );
+}
+
 

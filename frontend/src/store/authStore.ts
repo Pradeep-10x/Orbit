@@ -20,47 +20,57 @@ interface AuthState {
     isAuthenticated: boolean;
     isLoading: boolean;
     isCheckingAuth: boolean;
-    login: (credentials: any) => Promise<void>;
-    register: (data: any) => Promise<void>;
+    isAuthChecked: boolean;
+    login: (credentials: { username?: string; email?: string; password: string }) => Promise<void>;
+    register: (data: { username: string; email: string; password: string; fullName?: string }) => Promise<void>;
     logout: () => Promise<void>;
     checkAuth: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>((set: any) => ({
+// Track if checkAuth is currently running to prevent duplicate calls
+let isCheckingAuthInProgress = false;
+
+export const useAuthStore = create<AuthState>((set) => ({
     user: null,
     isAuthenticated: false,
     isLoading: false,
-    isCheckingAuth: true,
+    isCheckingAuth: false,
+    isAuthChecked: false,
 
     login: async (credentials) => {
         try {
             set({ isLoading: true });
             const { data } = await api.post('/user/login', credentials);
-            set({ user: data.data, isAuthenticated: true, isLoading: false });
+            localStorage.setItem('token', data.data?.token || '');
+            set({ user: data.data.user || data.data, isAuthenticated: true, isLoading: false });
             toast.success('Logged in successfully');
         } catch (error: any) {
             set({ isLoading: false });
-            toast.error(error.response?.data?.message || 'Login failed');
-            throw error;
+            const errorMessage = error.response?.data?.message || 'Login failed';
+            toast.error(errorMessage);
+            throw new Error(errorMessage);
         }
     },
 
-    register: async (credentials) => {
+    register: async (data) => {
         try {
             set({ isLoading: true });
-            const { data } = await api.post('/user/register', credentials);
-            set({ user: data.data, isAuthenticated: true, isLoading: false });
+            const response = await api.post('/user/register', data);
+            localStorage.setItem('token', response.data.data?.token || '');
+            set({ user: response.data.data.user || response.data.data, isAuthenticated: true, isLoading: false });
             toast.success('Registration successful');
         } catch (error: any) {
             set({ isLoading: false });
-            toast.error(error.response?.data?.message || 'Registration failed');
-            throw error;
+            const errorMessage = error.response?.data?.message || 'Registration failed';
+            toast.error(errorMessage);
+            throw new Error(errorMessage);
         }
     },
 
     logout: async () => {
         try {
             await api.post('/user/logout');
+            localStorage.removeItem('token');
             toast.success('Logged out');
         } catch (error) {
             console.error('Logout failed', error);
@@ -70,13 +80,22 @@ export const useAuthStore = create<AuthState>((set: any) => ({
     },
 
     checkAuth: async () => {
+        // Prevent duplicate simultaneous calls
+        if (isCheckingAuthInProgress) {
+            return;
+        }
+
         try {
+            isCheckingAuthInProgress = true;
             set({ isCheckingAuth: true });
             const { data } = await api.get('/user/me');
-            set({ user: data.data, isAuthenticated: true, isCheckingAuth: false });
+            set({ user: data.data, isAuthenticated: true, isCheckingAuth: false, isAuthChecked: true });
         } catch (error) {
-            // Functional failure to get user means not logged in
-            set({ user: null, isAuthenticated: false, isCheckingAuth: false });
+            localStorage.removeItem('token');
+            set({ user: null, isAuthenticated: false, isCheckingAuth: false, isAuthChecked: true });
+        } finally {
+            isCheckingAuthInProgress = false;
         }
     },
 }));
+

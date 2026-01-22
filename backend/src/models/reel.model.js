@@ -14,6 +14,7 @@ const reelSchema = new mongoose.Schema(
     caption: String,
     likesCount: { type: Number, default: 0 },
     commentsCount: { type: Number, default: 0 },
+    viewsCount: { type: Number, default: 0 },
     isDeleted: { type: Boolean, default: false }
   },
   { timestamps: true }

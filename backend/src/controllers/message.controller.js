@@ -43,11 +43,15 @@ import mongoose from 'mongoose';
     receiver: receiverId,
     content
   });
-emitToUser(req, receiverId, "message:new", message);
+  
+  // Populate sender before emitting
+  const populatedMessage = await Message.findById(message._id).populate('sender', 'username avatar fullName');
+  
+  emitToUser(req, receiverId, "message:new", populatedMessage);
   conversation.lastMessage = content;
   await conversation.save();
 
-  res.status(201).json(new ApiResponse(201, message));
+  res.status(201).json(new ApiResponse(201, populatedMessage || message));
 });
 
 const getConversations = asyncHandler(async (req, res) => {
@@ -76,7 +80,9 @@ const getMessages = asyncHandler(async (req, res) => {
 
   const messages = await Message.find({
     conversation: conversationId
-  }).sort({ createdAt: 1 });
+  })
+  .populate('sender', 'username avatar fullName')
+  .sort({ createdAt: 1 });
 
   res.status(200).json(new ApiResponse(200, messages));
 });
