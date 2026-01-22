@@ -48,7 +48,7 @@ const formatTimeAgo = (date: Date): string => {
 
 export default function LiveOrbitPanel() {
   const { user } = useAuthStore();
-  const { socket, notifications: realtimeNotifications } = useSocketStore();
+  const { socket } = useSocketStore();
   const navigate = useNavigate();
   const [liveStories, setLiveStories] = useState<Story[]>([]);
   const [reelsNow, setReelsNow] = useState<Reel[]>([]);

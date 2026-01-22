@@ -85,12 +85,27 @@ export const useAuthStore = create<AuthState>((set) => ({
             return;
         }
 
+        // Check if there's a token first - if not, skip the API call
+        const token = localStorage.getItem('token');
+        if (!token) {
+            set({ user: null, isAuthenticated: false, isCheckingAuth: false, isAuthChecked: true });
+            return;
+        }
+
         try {
             isCheckingAuthInProgress = true;
             set({ isCheckingAuth: true });
-            const { data } = await api.get('/user/me');
+            
+            // Add timeout to prevent infinite loading
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+            
+            const { data } = await api.get('/user/me', { signal: controller.signal });
+            clearTimeout(timeoutId);
+            
             set({ user: data.data, isAuthenticated: true, isCheckingAuth: false, isAuthChecked: true });
-        } catch (error) {
+        } catch (error: any) {
+            console.error('Auth check failed:', error?.message || error);
             localStorage.removeItem('token');
             set({ user: null, isAuthenticated: false, isCheckingAuth: false, isAuthChecked: true });
         } finally {
