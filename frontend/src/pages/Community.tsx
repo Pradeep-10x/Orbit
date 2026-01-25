@@ -1,11 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Search, Loader2 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Users, Search, Loader2, Plus } from 'lucide-react';
 import { communityPostAPI } from '@/lib/api';
 import { toast } from 'react-hot-toast';
-import { useAuthStore } from '@/store/authStore';
 import CommunityPostCard from '@/components/feed/CommunityPostCard';
+import CreateCommunityModal from '@/components/community/CreateCommunityModal';
 
 interface CommunityPost {
   _id: string;
@@ -30,13 +29,13 @@ interface CommunityPost {
 }
 
 export default function CommunityPage() {
-  const { user } = useAuthStore();
   const navigate = useNavigate();
   const [feedPosts, setFeedPosts] = useState<CommunityPost[]>([]);
   const [loadingFeed, setLoadingFeed] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
   const [hasNext, setHasNext] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const observerTarget = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -140,8 +139,15 @@ export default function CommunityPage() {
         {/* Header */}
         <div className="mb-6 pb-4 border-b border-[rgba(168,85,247,0.2)]">
           <div className="flex items-center justify-between mb-2">
-            <h1 className="text-3xl font-bold text-[#e5e7eb]">Community</h1>
+            <h1 className="text-3xl font-bold text-[#e5e7eb]">Community Feed</h1>
             <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="px-4 py-2 bg-[#7c3aed] hover:bg-[#6d28d9] rounded-lg text-white font-semibold transition-colors flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Create Community
+              </button>
               <button
                 onClick={() => navigate('/discover-communities')}
                 className="px-4 py-2 glass-card rounded-lg text-[#e5e7eb] hover:border-[rgba(168,85,247,0.3)] transition-colors flex items-center gap-2"
@@ -151,50 +157,56 @@ export default function CommunityPage() {
               </button>
             </div>
           </div>
-          <p className="text-[#9ca3af]">Connect with people who share your interests</p>
+          <p className="text-[#9ca3af]">People who share your interests ;)</p>
         </div>
 
         {/* Feed Content */}
         <div className="max-w-2xl mx-auto">
-              {loadingFeed ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="w-8 h-8 animate-spin text-[#a855f7]" />
-                </div>
-              ) : feedPosts.length > 0 ? (
-                <>
-                  {feedPosts.map((post) => (
-                    <CommunityPostCard
-                      key={post._id}
-                      post={post}
-                      onLike={handleLikePost}
-                      onDelete={handleDeletePost}
-                    />
-                  ))}
-                  {hasNext && (
-                    <div ref={observerTarget} className="flex items-center justify-center py-8">
-                      {loadingMore && <Loader2 className="w-6 h-6 animate-spin text-[#a855f7]" />}
-                    </div>
-                  )}
-                  {!hasNext && feedPosts.length > 0 && (
-                    <div className="text-center py-8">
-                      <p className="text-[#9ca3af] text-sm">You're all caught up</p>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="text-center py-12">
-                  <Users className="w-12 h-12 text-[#9ca3af] mx-auto mb-4" />
-                  <p className="text-[#9ca3af] mb-4">No posts from your communities yet</p>
-                  <button
-                    onClick={() => navigate('/discover-communities')}
-                    className="px-6 py-2 bg-[#7c3aed] hover:bg-[#6d28d9] rounded-lg text-white font-semibold transition-colors"
-                  >
-                    Discover Communities
-                  </button>
+          {loadingFeed ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-[#a855f7]" />
+            </div>
+          ) : feedPosts.length > 0 ? (
+            <>
+              {feedPosts.map((post) => (
+                <CommunityPostCard
+                  key={post._id}
+                  post={post}
+                  onLike={handleLikePost}
+                  onDelete={handleDeletePost}
+                />
+              ))}
+              {hasNext && (
+                <div ref={observerTarget} className="flex items-center justify-center py-8">
+                  {loadingMore && <Loader2 className="w-6 h-6 animate-spin text-[#a855f7]" />}
                 </div>
               )}
+              {!hasNext && feedPosts.length > 0 && (
+                <div className="text-center py-8">
+                  <p className="text-[#9ca3af] text-sm">You're all caught up</p>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="text-center py-12">
+              <Users className="w-12 h-12 text-[#9ca3af] mx-auto mb-4" />
+              <p className="text-[#9ca3af] mb-4">No posts from your communities yet</p>
+              <button
+                onClick={() => navigate('/discover-communities')}
+                className="px-6 py-2 bg-[#7c3aed] hover:bg-[#6d28d9] rounded-lg text-white font-semibold transition-colors"
+              >
+                Discover Communities
+              </button>
             </div>
+          )}
+        </div>
       </div>
+
+      <CreateCommunityModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={() => fetchFeed(1, false)}
+      />
     </div>
   );
 }
