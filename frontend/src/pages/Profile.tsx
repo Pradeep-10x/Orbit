@@ -160,7 +160,8 @@ export default function ProfilePage() {
 
               {/* User Info */}
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-3 mb-2">
+                {/* Name first */}
+                <div className="flex items-center gap-3">
                   <h1 className="text-2xl font-bold text-[#e5e7eb]">{profileUser.username}</h1>
                   {profileUser.isVerified && (
                     <span className="text-[#06b6d4] text-lg font-medium">✓</span>
@@ -169,11 +170,8 @@ export default function ProfilePage() {
                 {profileUser.fullName && (
                   <p className="text-[#9ca3af] mb-2">{profileUser.fullName}</p>
                 )}
-                {profileUser.bio && (
-                  <p className="text-[#e5e7eb] mb-4">{profileUser.bio}</p>
-                )}
 
-                {/* Stats */}
+                {/* Stats - Posts, Followers, Following */}
                 <div className="flex items-center gap-6 mb-4">
                   <div className="text-center">
                     <div className="font-semibold text-[#e5e7eb]">{posts.length}</div>
@@ -188,39 +186,44 @@ export default function ProfilePage() {
                     <div className="text-sm text-[#9ca3af]">following</div>
                   </button>
                 </div>
-
-                {/* Actions */}
-                <div className="flex items-center gap-3">
-                  {isOwnProfile ? (
-                    <Link
-                      to="/profile/edit"
-                      className="px-6 py-2 glass-card rounded-lg font-semibold text-[#e5e7eb] hover:border-[rgba(168,85,247,0.3)] transition-colors flex items-center gap-2"
-                    >
-                      <Settings className="w-4 h-4" />
-                      Edit Profile
-                    </Link>
-                  ) : (
-                    <button
-                      onClick={handleFollow}
-                      className={`px-6 py-2 rounded-lg font-semibold transition-all duration-300 ${isFollowing
-                        ? 'glass-card text-[#e5e7eb] hover:border-[rgba(168,85,247,0.3)]'
-                        : 'bg-[#7c3aed] text-white hover:bg-[#6d28d9]'
-                        }`}
-                    >
-                      {isFollowing ? 'Following' : 'Follow'}
-                    </button>
-                  )}
-
-                  {!profileUser.isVerified && profileUser.username === currentUser?.username && (
-                    <Link
-                      to="/settings"
-                      className="px-4 py-2 glass-card rounded-lg text-sm font-medium text-[#e5e7eb] hover:border-[rgba(168,85,247,0.3)] transition-colors"
-                    >
-                      Get Verified
-                    </Link>
-                  )}
-                </div>
               </div>
+            </div>
+
+            {/* Bio - Below profile picture area */}
+            {profileUser.bio && (
+              <p className="text-[#e5e7eb]  mb-3">{profileUser.bio}</p>
+            )}
+
+            {/* Actions - Edit Profile / Follow */}
+            <div className="flex items-center gap-3">
+              {isOwnProfile ? (
+                <Link
+                  to="/profile/edit"
+                  className="px-6 py-2 glass-card rounded-lg font-semibold text-[#e5e7eb] hover:border-[rgba(168,85,247,0.3)] transition-colors flex items-center gap-2"
+                >
+                  <Settings className="w-4 h-4" />
+                  Edit Profile
+                </Link>
+              ) : (
+                <button
+                  onClick={handleFollow}
+                  className={`px-6 py-2 rounded-lg font-semibold transition-all duration-300 ${isFollowing
+                    ? 'glass-card text-[#e5e7eb] hover:border-[rgba(168,85,247,0.3)]'
+                    : 'bg-[#7c3aed] text-white hover:bg-[#6d28d9]'
+                    }`}
+                >
+                  {isFollowing ? 'Following' : 'Follow'}
+                </button>
+              )}
+
+              {!profileUser.isVerified && profileUser.username === currentUser?.username && (
+                <Link
+                  to="/settings"
+                  className="px-4 py-2 glass-card rounded-lg text-sm font-medium text-[#e5e7eb] hover:border-[rgba(168,85,247,0.3)] transition-colors"
+                >
+                  Get Verified
+                </Link>
+              )}
             </div>
           </div>
 
