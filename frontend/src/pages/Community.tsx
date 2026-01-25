@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Users, Search, TrendingUp, Globe, Lock, Plus, Loader2, X, Upload } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { communityAPI } from '@/lib/api';
@@ -32,11 +32,28 @@ export default function CommunityPage() {
   const [coverImage, setCoverImage] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  // Suppress unused warnings - these will be used when API is integrated
-  void setCommunities;
-  void setJoinedCommunities;
-  void setLoadingCommunities;
+
+  useEffect(() => {
+    fetchCommunities();
+  }, [activeTab]);
+
+  const fetchCommunities = async () => {
+    try {
+      setLoadingCommunities(true);
+      if (activeTab === 'discover') {
+        const response = await communityAPI.getAll();
+        setCommunities(response.data.data?.communities || []);
+      } else {
+        const response = await communityAPI.getJoined();
+        setJoinedCommunities(response.data.data || []);
+      }
+    } catch (error: any) {
+      console.error('Failed to fetch communities:', error);
+      toast.error('Failed to load communities');
+    } finally {
+      setLoadingCommunities(false);
+    }
+  };
 
   const filteredCommunities = communities.filter(c =>
     c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -53,6 +70,8 @@ export default function CommunityPage() {
       setJoining(communityId);
       await communityAPI.joinCommunity(communityId);
       toast.success('Successfully joined community!');
+      // Refresh communities list
+      fetchCommunities();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to join community');
     } finally {
@@ -83,6 +102,8 @@ export default function CommunityPage() {
       setNewCommunity({ name: '', description: '', isPublic: true });
       setCoverImage(null);
       setCoverPreview(null);
+      // Refresh communities list
+      fetchCommunities();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to create community');
     } finally {

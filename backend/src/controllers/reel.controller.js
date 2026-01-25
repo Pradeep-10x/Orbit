@@ -75,6 +75,45 @@ const getReels = asyncHandler(async (req, res) => {
     }));
 });
 
+const getReelFeed = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
+
+  // Get reels from users the current user follows, plus their own reels
+  const followingIds = await Follow.find({ follower: userId })
+    .distinct("following");
+
+  const userIds = [...followingIds, userId];
+
+  const reels = await Reel.find({
+    user: { $in: userIds },
+    isDeleted: false
+  })
+    .populate("user", "username avatar isVerified")
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit);
+
+  const totalCount = await Reel.countDocuments({
+    user: { $in: userIds },
+    isDeleted: false
+  });
+
+  const totalPages = Math.ceil(totalCount / limit);
+  const hasNext = page < totalPages;
+  const hasPrev = page > 1;
+
+  return res.status(200).json(new ApiResponse(200, {
+    reels,
+    page,
+    totalPages,
+    hasNext,
+    hasPrev
+  }));
+});
+
 const deleteReel = asyncHandler(async (req, res) => {
     const { reelId } = req.params;
     const reel = await Reel.findOne({ _id: reelId, isDeleted: false });
@@ -98,5 +137,6 @@ const deleteReel = asyncHandler(async (req, res) => {
 export {
   createReel,
   getReels,
+  getReelFeed,
   deleteReel,
 };

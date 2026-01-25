@@ -242,7 +242,22 @@ const getUserProfile = asyncHandler(async (req, res) => {
     if (!user) {
         throw new ApiError(404, "User not found");
     }
-    return res.status(200).json(new ApiResponse(200, user, "User profile fetched successfully"));
+    
+    // Check if current user is following this user
+    let isFollowing = false;
+    if (req.user && req.user._id.toString() !== user._id.toString()) {
+        const { Follow } = await import('../models/follow.model.js');
+        const follow = await Follow.findOne({
+            follower: req.user._id,
+            following: user._id
+        });
+        isFollowing = !!follow;
+    }
+    
+    const userData = user.toObject();
+    userData.isFollowing = isFollowing;
+    
+    return res.status(200).json(new ApiResponse(200, userData, "User profile fetched successfully"));
 });
 
 const searchUsers = asyncHandler(async (req, res) => {
@@ -260,4 +275,57 @@ const searchUsers = asyncHandler(async (req, res) => {
     return res.status(200).json(new ApiResponse(200, users, "Users found successfully"));
 });
 
-export { registerUser, loginUser, logoutUser, deleteUser, refreshaccessToken, changePassword, GetCurrentUser, updateUserDetails, UpdateAvatar, getUserProfile, searchUsers };
+const updatePrivacy = asyncHandler(async (req, res) => {
+    const { privateAccount, messagePolicy, allowMentions, allowTagging } = req.body;
+    
+    const updateFields = {};
+    if (typeof privateAccount === 'boolean') {
+        updateFields['privacy.privateAccount'] = privateAccount;
+    }
+    if (messagePolicy && ['everyone', 'followers'].includes(messagePolicy)) {
+        updateFields['privacy.messagePolicy'] = messagePolicy;
+    }
+    if (typeof allowMentions === 'boolean') {
+        updateFields['privacy.allowMentions'] = allowMentions;
+    }
+    if (typeof allowTagging === 'boolean') {
+        updateFields['privacy.allowTagging'] = allowTagging;
+    }
+
+    if (Object.keys(updateFields).length === 0) {
+        throw new ApiError(400, "At least one privacy field is required to update");
+    }
+
+    const user = await User.findByIdAndUpdate(
+        req.user._id,
+        { $set: updateFields },
+        { new: true }
+    ).select("-password -refreshToken");
+
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    }
+
+    return res.status(200).json(
+        new ApiResponse(200, user.privacy || {}, "Privacy settings updated successfully")
+    );
+});
+
+const getPrivacy = asyncHandler(async (req, res) => {
+    const user = await User.findById(req.user._id).select("privacy");
+    
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    }
+
+    return res.status(200).json(
+        new ApiResponse(200, user.privacy || {
+            privateAccount: false,
+            messagePolicy: "everyone",
+            allowMentions: true,
+            allowTagging: true
+        }, "Privacy settings fetched successfully")
+    );
+});
+
+export { registerUser, loginUser, logoutUser, deleteUser, refreshaccessToken, changePassword, GetCurrentUser, updateUserDetails, UpdateAvatar, getUserProfile, searchUsers, updatePrivacy, getPrivacy };

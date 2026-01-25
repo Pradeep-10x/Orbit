@@ -173,14 +173,37 @@ export default function SettingsPage() {
   const handlePrivacySave = async () => {
     try {
       setLoadingPrivacy(true);
-      await api.patch('/user/privacy', privacy);
+      await userAPI.updatePrivacy(privacy);
       toast.success('Privacy updated');
+      await checkAuth(); // Refresh user data
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to update privacy');
     } finally {
       setLoadingPrivacy(false);
     }
   };
+
+  useEffect(() => {
+    // Load privacy settings
+    const loadPrivacy = async () => {
+      try {
+        const response = await userAPI.getPrivacy();
+        if (response.data.data) {
+          setPrivacy({
+            privateAccount: response.data.data.privateAccount || false,
+            messagePolicy: response.data.data.messagePolicy || 'everyone',
+            allowMentions: response.data.data.allowMentions !== false,
+            allowTagging: response.data.data.allowTagging !== false,
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load privacy settings:', error);
+      }
+    };
+    if (isAuthenticated) {
+      loadPrivacy();
+    }
+  }, [isAuthenticated]);
 
   const handleNotificationsSave = async () => {
     try {

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { upload } from '../middlewares/multer.middleware.js';
-import { registerUser, loginUser, logoutUser, deleteUser, refreshaccessToken, changePassword, GetCurrentUser, updateUserDetails, UpdateAvatar, getUserProfile, searchUsers } from '../controllers/user.controller.js';
+import { registerUser, loginUser, logoutUser, deleteUser, refreshaccessToken, changePassword, GetCurrentUser, updateUserDetails, UpdateAvatar, getUserProfile, searchUsers, updatePrivacy, getPrivacy } from '../controllers/user.controller.js';
 import { verifyJWT } from '../middlewares/auth.middleware.js';
 import { followUnfollowUser, getFollowers, getFollowing } from '../controllers/follow.controller.js';
 import limiter from '../middlewares/rateLimiter.js';
@@ -29,4 +29,6 @@ router.route("/:userId/followers").get(getFollowers);
 router.route("/:userId/following").get(getFollowing);
 router.route("/search").get(searchUsers);
 router.route("/u/:username").get(verifyJWT, getUserProfile);
+router.route("/privacy").get(verifyJWT, getPrivacy);
+router.route("/privacy").patch(verifyJWT, updatePrivacy);
 export default router

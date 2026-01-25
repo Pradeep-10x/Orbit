@@ -57,9 +57,7 @@ export default function ProfilePage() {
       const response = await userAPI.getUserProfile(targetUsername);
       const userData = response.data.data;
       setProfileUser(userData);
-
-      // Check follow status (would need dedicated endpoint)
-      // For now, optimistic UI
+      setIsFollowing(userData.isFollowing || false);
     } catch (error: any) {
       const message = error.response?.data?.message || 'Failed to load profile';
       setError(message);
@@ -206,7 +204,7 @@ export default function ProfilePage() {
                       onClick={handleFollow}
                       className={`px-6 py-2 rounded-lg font-semibold transition-all duration-300 ${isFollowing
                         ? 'glass-card text-[#e5e7eb] hover:border-[rgba(168,85,247,0.3)]'
-                        : 'bg-gradient-to-r from-[#a855f7] to-[#06b6d4] text-white hover:scale-105 glow-hover'
+                        : 'bg-[#7c3aed] text-white hover:bg-[#6d28d9]'
                         }`}
                     >
                       {isFollowing ? 'Following' : 'Follow'}

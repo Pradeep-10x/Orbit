@@ -1,38 +1,98 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
-import { Shield, Users, LogOut, User, CheckCircle2, Search } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Shield, Users, LogOut, User, CheckCircle2, Search, Loader2, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { userAPI } from '@/lib/api';
-import { toast } from 'react-hot-toast';
+
+interface SearchUser {
+  _id: string;
+  username: string;
+  fullName?: string;
+  avatar?: string;
+  isVerified?: boolean;
+}
 
 export default function RightPanel() {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const [friendQuery, setFriendQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<SearchUser[]>([]);
   const [searching, setSearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
 
   if (!user) return null;
 
-  const handleAddFriend = async () => {
+  // Debounced search as user types
+  useEffect(() => {
     const query = friendQuery.trim();
-    if (!query) return;
-    try {
-      setSearching(true);
-      const { data } = await userAPI.getUserProfile(query);
-      const foundUser = data?.data;
-      if (foundUser?.username) {
-        toast.success(`Found ${foundUser.username}`);
-        navigate(`/profile/${foundUser.username}`);
-      } else {
-        toast.error('User not found');
-      }
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'User not found');
-    } finally {
-      setSearching(false);
+    
+    // Clear previous timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
     }
+
+    // Don't search if query is too short
+    if (query.length < 2) {
+      setSearchResults([]);
+      setShowResults(false);
+      return;
+    }
+
+    // Set loading state
+    setSearching(true);
+    setShowResults(true);
+
+    // Debounce search by 300ms
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        const { data } = await userAPI.searchUsers(query);
+        const users = Array.isArray(data.data) ? data.data : [];
+        // Filter out current user from results
+        const filteredUsers = users.filter((u: SearchUser) => u._id !== user._id);
+        setSearchResults(filteredUsers);
+      } catch (error: any) {
+        console.error('Search failed:', error);
+        setSearchResults([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 300);
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [friendQuery, user._id]);
+
+  // Close results when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setShowResults(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleUserClick = (username: string) => {
+    setFriendQuery('');
+    setSearchResults([]);
+    setShowResults(false);
+    navigate(`/profile/${username}`);
   };
+
+  const handleClearSearch = () => {
+    setFriendQuery('');
+    setSearchResults([]);
+    setShowResults(false);
+  };
+
 
   return (
     <aside className="hidden xl:block w-80 fixed right-0 top-0 h-full border-l border-[rgba(168,85,247,0.15)] glass-panel z-30">
@@ -123,32 +183,98 @@ export default function RightPanel() {
           transition={{ duration: 0.4, delay: 0.1 }}
           className="glass-card rounded-xl p-6 space-y-4"
         >
-          <div>
+          <div className="relative" ref={searchContainerRef}>
             <div className="flex items-center gap-2 mb-3">
               <Search className="w-5 h-5 text-[#9ca3af]" />
               <h3 className="text-base font-semibold text-[#e5e7eb]">Add a friend</h3>
             </div>
-            <div className="flex gap-2 items-stretch">
-              <input
-                type="text"
-                placeholder="Search by username or email"
-                value={friendQuery}
-                onChange={(e) => setFriendQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleAddFriend();
-                  }
-                }}
-                className="flex-1 min-w-0 glass-card rounded-lg px-3 py-2 text-[#e5e7eb] placeholder-[#9ca3af] focus:outline-none focus:border-[rgba(168,85,247,0.4)]"
-              />
-              <button
-                onClick={handleAddFriend}
-                disabled={searching || !friendQuery.trim()}
-                className="shrink-0 px-3 py-2 bg-[#7c3aed] hover:bg-[#6d28d9] rounded-lg text-white font-semibold transition-colors disabled:opacity-60"
-              >
-                {searching ? 'Searching...' : 'Add'}
-              </button>
+            <div className="relative">
+              <div className="relative flex items-center">
+                <Search className="absolute left-3 w-4 h-4 text-[#9ca3af] pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="Search by username..."
+                  value={friendQuery}
+                  onChange={(e) => setFriendQuery(e.target.value)}
+                  onFocus={() => {
+                    if (searchResults.length > 0 || friendQuery.trim().length >= 2) {
+                      setShowResults(true);
+                    }
+                  }}
+                  className="w-full pl-10 pr-10 py-2.5 glass-card rounded-lg text-[#e5e7eb] placeholder-[#9ca3af] focus:outline-none focus:border-[rgba(168,85,247,0.4)] focus:ring-2 focus:ring-[rgba(168,85,247,0.2)] transition-all"
+                />
+                {searching ? (
+                  <div className="absolute right-3">
+                    <Loader2 className="w-4 h-4 text-[#a855f7] animate-spin" />
+                  </div>
+                ) : friendQuery && (
+                  <button
+                    onClick={handleClearSearch}
+                    className="absolute right-3 p-1 hover:bg-[rgba(168,85,247,0.1)] rounded transition-colors"
+                  >
+                    <X className="w-4 h-4 text-[#9ca3af]" />
+                  </button>
+                )}
+              </div>
+
+              {/* Search Results Dropdown */}
+              <AnimatePresence>
+                {showResults && friendQuery.trim().length >= 2 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute z-50 w-full mt-2 bg-[#0a0a12] rounded-lg border border-[rgba(168,85,247,0.3)] shadow-xl max-h-64 overflow-y-auto no-scrollbar"
+                  >
+                    {searching ? (
+                      <div className="p-4 flex items-center justify-center gap-2 text-[#9ca3af]">
+                        <Loader2 className="w-4 h-4 animate-spin text-[#a855f7]" />
+                        <span className="text-sm">Searching...</span>
+                      </div>
+                    ) : searchResults.length > 0 ? (
+                      <div className="py-2">
+                        {searchResults.map((result) => (
+                          <motion.button
+                            key={result._id}
+                            onClick={() => handleUserClick(result.username)}
+                            className="w-full px-4 py-3 flex items-center gap-3 hover:bg-[rgba(168,85,247,0.1)] transition-colors text-left group"
+                            whileHover={{ x: 2 }}
+                          >
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#a855f7] to-[#06b6d4] flex items-center justify-center overflow-hidden flex-shrink-0">
+                              <img
+                                src={result.avatar || "/default-avatar.jpg"}
+                                alt={result.username}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-[#e5e7eb] group-hover:text-[#a855f7] transition-colors">
+                                  {result.username}
+                                </span>
+                                {result.isVerified && (
+                                  <span className="text-[#06b6d4] text-xs">✓</span>
+                                )}
+                              </div>
+                              {result.fullName && (
+                                <span className="text-sm text-[#9ca3af] truncate block">
+                                  {result.fullName}
+                                </span>
+                              )}
+                            </div>
+                            <User className="w-4 h-4 text-[#9ca3af] group-hover:text-[#a855f7] transition-colors opacity-0 group-hover:opacity-100" />
+                          </motion.button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-4 text-center text-[#9ca3af] text-sm">
+                        No users found
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
 

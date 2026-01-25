@@ -33,6 +33,11 @@ export const userAPI = {
   followUnfollow: (userId: string) => api.post(`/user/${userId}/follow`),
   getFollowers: (userId: string) => api.get(`/user/${userId}/followers`),
   getFollowing: (userId: string) => api.get(`/user/${userId}/following`),
+  
+  // Privacy
+  getPrivacy: () => api.get('/user/privacy'),
+  updatePrivacy: (data: { privateAccount?: boolean; messagePolicy?: 'everyone' | 'followers'; allowMentions?: boolean; allowTagging?: boolean }) => 
+    api.patch('/user/privacy', data),
 };
 
 // ============== POST API ==============
@@ -102,6 +107,7 @@ export const reelAPI = {
   create: (formData: FormData) => api.post('/reel/create', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
+  getFeed: (page = 1, limit = 10) => api.get('/reel/feed', { params: { page, limit } }),
   getUserReels: (userId: string) => api.get(`/reel/${userId}`),
   deleteReel: (reelId: string) => api.delete(`/reel/delete/${reelId}`),
 };
@@ -118,6 +124,8 @@ export const storyAPI = {
 
 // ============== COMMUNITY API ==============
 export const communityAPI = {
+  getAll: () => api.get('/community'),
+  getJoined: () => api.get('/community/joined'),
   create: (formData: FormData) => api.post('/community', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),

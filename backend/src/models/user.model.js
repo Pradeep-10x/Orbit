@@ -54,7 +54,27 @@ const userSchema = new Schema({
             type : String, 
             enum : ["Gold" , "Silver"],
             default : null,
-        }
+        },
+  // Privacy settings
+  privacy: {
+    privateAccount: {
+      type: Boolean,
+      default: false
+    },
+    messagePolicy: {
+      type: String,
+      enum: ["everyone", "followers"],
+      default: "everyone"
+    },
+    allowMentions: {
+      type: Boolean,
+      default: true
+    },
+    allowTagging: {
+      type: Boolean,
+      default: true
+    }
+  }
 }, {
     timestamps : true   
 });

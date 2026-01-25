@@ -78,20 +78,28 @@ export default function ReelsPage() {
   const fetchReels = async () => {
     try {
       setLoading(true);
-      // Fetch reels - for now using user's own reels
-      if (user?._id) {
-        const response = await reelAPI.getUserReels(user._id);
-        const fetchedReels = response.data.data?.reels || [];
-        setReels(fetchedReels);
+      // Fetch reel feed (reels from followed users + own reels)
+      const response = await reelAPI.getFeed(1, 50);
+      const fetchedReels = response.data.data?.reels || [];
+      setReels(fetchedReels);
 
-        // Find initial index if reelId provided
-        if (reelId) {
-          const index = fetchedReels.findIndex((r: Reel) => r._id === reelId);
-          if (index !== -1) setCurrentIndex(index);
-        }
+      // Find initial index if reelId provided
+      if (reelId) {
+        const index = fetchedReels.findIndex((r: Reel) => r._id === reelId);
+        if (index !== -1) setCurrentIndex(index);
       }
     } catch (error: any) {
       console.error('Failed to fetch reels:', error);
+      // Fallback to user's own reels if feed fails
+      if (user?._id) {
+        try {
+          const response = await reelAPI.getUserReels(user._id);
+          const fetchedReels = response.data.data?.reels || [];
+          setReels(fetchedReels);
+        } catch (fallbackError) {
+          console.error('Failed to fetch user reels:', fallbackError);
+        }
+      }
     } finally {
       setLoading(false);
     }
