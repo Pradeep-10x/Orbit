@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Users, Search, TrendingUp, Globe, Lock, Plus, Loader2, X, Upload, Heart, MessageCircle, Image as ImageIcon } from 'lucide-react';
+import { Users, Globe, Lock, Plus, Loader2, X, Upload, Heart, MessageCircle, Image as ImageIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { communityAPI, communityPostAPI } from '@/lib/api';
 import { toast } from 'react-hot-toast';
@@ -207,67 +207,10 @@ export default function CommunityPage() {
     <div className="min-h-screen">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-10 py-8">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-50 pb-2 border-b border-[rgba(168,85,247,0.2)]">
           <h1 className="text-3xl font-bold text-[#e5e7eb] mb-2"><u>Community Feed</u></h1>
           <p className="text-[#9ca3af]">People who share your interests ;)</p>
         </div>
-
-        {/* Search
-        <div className="mb-6">
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#9ca3af]" />
-            <input
-              type="text"
-              placeholder="Search communities..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 glass-card rounded-xl text-[#e5e7eb] placeholder-[#9ca3af] focus:outline-none focus:border-[rgba(168,85,247,0.4)]"
-            />
-          </div>
-        </div> */}
-
-        {/* Tabs
-        <div className="flex items-center gap-4 mb-6 flex-wrap">
-          <div className="flex gap-2 p-1 glass-card rounded-lg w-fit">
-            <button
-              onClick={() => setActiveTab('feed')}
-              className={`py-2 px-4 rounded-md text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${activeTab === 'feed'
-                ? 'bg-[#7c3aed] text-white'
-                : 'text-[#9ca3af] hover:text-[#e5e7eb]'
-                }`}
-            >
-              <ImageIcon className="w-4 h-4" />
-              Feed
-            </button>
-            <button
-              onClick={() => setActiveTab('discover')}
-              className={`py-2 px-4 rounded-md text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${activeTab === 'discover'
-                ? 'bg-[#7c3aed] text-white'
-                : 'text-[#9ca3af] hover:text-[#e5e7eb]'
-                }`}
-            >
-              <TrendingUp className="w-4 h-4" />
-              Discover
-            </button>
-            <button
-              onClick={() => setActiveTab('joined')}
-              className={`py-2 px-4 rounded-md text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${activeTab === 'joined'
-                ? 'bg-[#7c3aed] text-white'
-                : 'text-[#9ca3af] hover:text-[#e5e7eb]'
-                }`}
-            >
-              <Users className="w-4 h-4" />
-              Joined
-            </button>
-          </div>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="py-2 px-4 rounded-lg bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm font-semibold transition-all duration-200 flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Create Community
-          </button>
-        </div> */}
 
         {/* Content */}
         <div className="grid gap-4">

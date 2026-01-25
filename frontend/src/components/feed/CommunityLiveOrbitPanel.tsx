@@ -263,7 +263,7 @@ export default function CommunityLiveOrbitPanel() {
               <span className="text-sm text-[#e5e7eb]">Create Community</span>
             </button>
             <Link 
-              to="/community"
+              to="/discover-communities"
               className="w-full glass-card rounded-md p-3 hover:border-[rgba(168,85,247,0.3)] transition-all text-left flex items-center gap-3"
             >
               <Users className="w-5 h-5 text-[#06b6d4]" />
