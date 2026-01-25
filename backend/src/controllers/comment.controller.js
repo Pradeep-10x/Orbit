@@ -29,6 +29,9 @@ const comment = await Comment.create({
     content,
 });
 
+// Populate user info for the response
+const populatedComment = await Comment.findById(comment._id).populate("user", "username avatar");
+
 await Post.findByIdAndUpdate(postId, { $inc: { commentsCount: 1 } });
 
 const notification = await Notification.create({
@@ -40,7 +43,7 @@ const notification = await Notification.create({
 
   emitToUser(req, post.user, "notification:new", notification);
 
-  res.status(201).json(new ApiResponse(201, comment));
+  res.status(201).json(new ApiResponse(201, populatedComment));
 });
 
 const createReelComment = asyncHandler(async (req, res) => {
@@ -155,19 +158,39 @@ const getReelComment= asyncHandler(async (req, res) => {
 
 const deleteComment = asyncHandler(async (req, res) => {
   const { commentId } = req.params;
+  const userId = req.user._id;
 
   const comment = await Comment.findById(commentId);
   if (!comment || comment.isDeleted)
     throw new ApiError(404, "Comment not found");
 
-  if (comment.user.toString() !== req.user._id.toString())
-    throw new ApiError(403, "Unauthorized");
+  // Check if user is comment author
+  const isCommentAuthor = comment.user.toString() === userId.toString();
+
+  // Check if user is post/reel owner (admin)
+  let isPostOwner = false;
+  if (comment.post) {
+    const post = await Post.findById(comment.post);
+    if (post && post.user.toString() === userId.toString()) {
+      isPostOwner = true;
+    }
+  } else if (comment.reel) {
+    const reel = await Reel.findById(comment.reel);
+    if (reel && reel.user.toString() === userId.toString()) {
+      isPostOwner = true;
+    }
+  }
+
+  // Allow deletion if user is comment author or post/reel owner
+  if (!isCommentAuthor && !isPostOwner) {
+    throw new ApiError(403, "Unauthorized to delete this comment");
+  }
 
   comment.isDeleted = true;
   await comment.save();
    
-  const post = await Post.exists({_id: comment.post, isDeleted: false});
-  if (post) {
+  const postExists = await Post.exists({_id: comment.post, isDeleted: false});
+  if (postExists) {
     await Post.findByIdAndUpdate(comment.post, {
     $inc: { commentsCount: -1 }
   });
