@@ -69,6 +69,22 @@ export const getCommunityFeed = asyncHandler(async (req, res) => {
   const limit = Number(req.query.limit) || 10;
   const skip = (page - 1) * limit;
 
+  // Check if community exists and get membership info
+  const community = await Community.findById(communityId);
+  if (!community) {
+    throw new ApiError(404, "Community not found");
+  }
+
+  // Check if user is member, admin, or creator
+  const isMember = community.members.some(m => m.toString() === req.user._id.toString());
+  const isAdmin = community.admins.some(a => a.toString() === req.user._id.toString());
+  const isCreator = community.creator.toString() === req.user._id.toString();
+
+  // Allow access if user is member, admin, or creator
+  if (!isMember && !isAdmin && !isCreator) {
+    throw new ApiError(403, "You must be a member to view this community's posts");
+  }
+
   const posts = await CommunityPost.find({
     community: communityId
   })
@@ -162,7 +178,8 @@ export const deleteCommunityPost = asyncHandler(async (req, res) => {
     throw new ApiError(403, "Not authorized to delete this post");
   }
 
-  await post.deleteOne();
+  // Permanently delete the post
+  await CommunityPost.findByIdAndDelete(postId);
   return res.status(200).json(new ApiResponse(200, null, "Post deleted successfully"));
 });
 

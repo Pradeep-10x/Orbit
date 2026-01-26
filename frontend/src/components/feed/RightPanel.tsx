@@ -50,10 +50,10 @@ export default function RightPanel() {
           // Get joined communities to exclude
           const joinedRes = await communityAPI.getJoined();
           const joinedIds = (joinedRes.data.data || []).map((c: Community) => c._id);
-          // Filter: only public, not joined, limit to 5
+          // Filter: only public, not joined, limit to 4
           const suggestions = allCommunities
             .filter((c: Community) => c.isPublic && !joinedIds.includes(c._id))
-            .slice(0, 5);
+            .slice(0, 4);
           setSuggestedCommunities(suggestions);
         } catch (error) {
           console.error('Failed to fetch community suggestions:', error);
@@ -330,16 +330,6 @@ export default function RightPanel() {
             </>
           ) : (
             <div>
-              <button
-                onClick={() => navigate('/messages')}
-                className="w-full mb-6 glass-card rounded-lg p-3 hover:border-[rgba(6,182,212,0.4)] transition-all flex items-center gap-2 text-[#e5e7eb] group"
-              >
-                <div className="w-8 h-8 rounded-full bg-[#06b6d4]/10 flex items-center justify-center group-hover:bg-[#06b6d4]/20 transition-colors">
-                  <MessageSquare className="w-4 h-4 text-[#06b6d4]" />
-                </div>
-                <span className="text-sm font-semibold uppercase tracking-wider">Community Chat</span>
-              </button>
-
               <div className="flex items-center gap-2 mb-3">
                 <Users className="w-5 h-5 text-[#9ca3af]" />
                 <h3 className="text-base font-semibold text-[#e5e7eb] uppercase tracking-wider">Suggestions</h3>
@@ -350,7 +340,7 @@ export default function RightPanel() {
                   <Loader2 className="w-5 h-5 animate-spin text-[#a855f7]" />
                 </div>
               ) : suggestedCommunities.length > 0 ? (
-                <div className="space-y-2">
+                <div className="space-y-2 max-h-64 overflow-y-auto no-scrollbar">
                   {suggestedCommunities.map((community) => (
                     <motion.div
                       key={community._id}
@@ -360,7 +350,7 @@ export default function RightPanel() {
                       onClick={() => navigate(`/discover-communities`)}
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-[#7c3aed]/20 flex items-center justify-center overflow-hidden flex-shrink-0">
+                        <div className="w-10 h-10 rounded-full bg-[#7c3aed]/20 flex items-center justify-center overflow-hidden flex-shrink-0">
                           {community.coverImage ? (
                             <img src={community.coverImage} alt={community.name} className="w-full h-full object-cover" />
                           ) : (

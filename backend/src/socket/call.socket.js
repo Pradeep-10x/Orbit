@@ -1,26 +1,57 @@
  function registerCallEvents(io, onlineUsers) {
   io.on("connection", (socket) => {
+    // Get userId from socket
+    const userId = socket.handshake.query.userId;
 
-    socket.on("call:start", ({ to, offer }) => {
-      const target = onlineUsers.get(to);
-      if (target) {
-        io.to(target).emit("call:incoming", {
-          from: socket.id,
-          offer
+    socket.on("call:start", ({ to, offer, type = 'video' }) => {
+      // 'to' should be userId, not socket.id
+      const targetSocketId = onlineUsers.get(to);
+      if (targetSocketId) {
+        io.to(targetSocketId).emit("call:incoming", {
+          from: userId || socket.id,
+          fromSocketId: socket.id,
+          offer,
+          type
         });
       }
     });
 
     socket.on("call:answer", ({ to, answer }) => {
-      io.to(to).emit("call:answer", { answer });
+      const targetSocketId = onlineUsers.get(to);
+      if (targetSocketId) {
+        io.to(targetSocketId).emit("call:answer", { 
+          answer,
+          from: userId || socket.id
+        });
+      }
     });
 
     socket.on("call:ice", ({ to, candidate }) => {
-      io.to(to).emit("call:ice", { candidate });
+      const targetSocketId = onlineUsers.get(to);
+      if (targetSocketId) {
+        io.to(targetSocketId).emit("call:ice", { 
+          candidate,
+          from: userId || socket.id
+        });
+      }
     });
 
     socket.on("call:end", ({ to }) => {
-      io.to(to).emit("call:end");
+      const targetSocketId = onlineUsers.get(to);
+      if (targetSocketId) {
+        io.to(targetSocketId).emit("call:end", {
+          from: userId || socket.id
+        });
+      }
+    });
+
+    socket.on("call:reject", ({ to }) => {
+      const targetSocketId = onlineUsers.get(to);
+      if (targetSocketId) {
+        io.to(targetSocketId).emit("call:rejected", {
+          from: userId || socket.id
+        });
+      }
     });
 
   });

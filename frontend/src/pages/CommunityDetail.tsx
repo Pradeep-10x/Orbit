@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Users, Globe, Lock, Loader2, ArrowLeft, Plus, Image as ImageIcon, X, Send, Settings, Trash2 } from 'lucide-react';
+import { Users, Globe, Lock, Loader2, ArrowLeft, Plus, Image as ImageIcon, X, Send, Settings, Trash2, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { communityAPI, communityPostAPI } from '@/lib/api';
 import { toast } from 'react-hot-toast';
@@ -338,6 +338,15 @@ export default function CommunityDetail() {
                                     </>
                                 )}
                             </button>
+                            {isOwner || isJoined ? (
+                                <button
+                                    onClick={() => navigate(`/messages?communityId=${id}`)}
+                                    className="p-2.5 glass-card rounded-xl text-[#9ca3af] hover:text-[#06b6d4] hover:border-[#06b6d4]/30 transition-all group"
+                                    title="Open Community Chat"
+                                >
+                                    <MessageSquare className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                                </button>
+                            ) : null}
                             {isAdmin && (
                                 <button
                                     onClick={() => setShowEditModal(true)}

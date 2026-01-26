@@ -171,6 +171,14 @@ export const communityCommentAPI = {
   deleteComment: (commentId: string) => api.delete(`/community-comments/${commentId}`),
 };
 
+// ============== COMMUNITY CHAT API ==============
+export const communityChatAPI = {
+  sendMessage: (communityId: string, content: string) =>
+    api.post(`/community-chat/${communityId}`, { content }),
+  getMessages: (communityId: string, page = 1, limit = 50) =>
+    api.get(`/community-chat/${communityId}`, { params: { page, limit } }),
+};
+
 export default {
   user: userAPI,
   post: postAPI,

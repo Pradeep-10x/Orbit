@@ -17,6 +17,7 @@ import storyRouter from "./routes/story.routes.js"
 import communityRoutes from "./routes/community.routes.js";
 import communityPostRoutes from "./routes/communityPost.routes.js";
 import communityCommentRoutes from "./routes/communityComment.routes.js";
+import communityChatRoutes from "./routes/communityChat.routes.js";
 
 
 const app = express()
@@ -60,6 +61,7 @@ app.use("/api/v1/story", storyRouter);
 app.use("/api/v1/community", communityRoutes);
 app.use("/api/v1/community-post", communityPostRoutes);
 app.use("/api/v1/community-comments", communityCommentRoutes);
+app.use("/api/v1/community-chat", communityChatRoutes);
 app.use((err, req, res, next) => {
   if (err instanceof ApiError) {
     return res.status(err.statusCode).json({
