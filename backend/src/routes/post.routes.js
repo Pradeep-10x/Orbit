@@ -6,7 +6,7 @@ import { upload } from "../middlewares/multer.middleware.js";
 
 const router = express.Router();
 
-router.route("/search").get(searchPosts);
+router.route("/search").get(verifyJWT, searchPosts);
 router.route("/create").post(verifyJWT, upload.single("media"), createPost);
 router.route("/user/:userId").get(getUserPosts);
 router.route("/:postId").get(getSinglePost);

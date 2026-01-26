@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Upload, Globe, Lock, Loader2, Camera } from 'lucide-react';
+import { X, Upload, Globe, Lock, Loader2, Camera, Trash2, AlertTriangle } from 'lucide-react';
 import { communityAPI } from '@/lib/api';
 import { toast } from 'react-hot-toast';
 import { useCommunityStore } from '@/store/communityStore';
+import { useNavigate } from 'react-router-dom';
 
 interface EditCommunityModalProps {
     isOpen: boolean;
@@ -22,7 +23,9 @@ interface EditCommunityModalProps {
 
 export default function EditCommunityModal({ isOpen, onClose, onSuccess, community }: EditCommunityModalProps) {
     const { triggerRefresh } = useCommunityStore();
+    const navigate = useNavigate();
     const [updating, setUpdating] = useState(false);
+    const [deleting, setDeleting] = useState(false);
     const [formData, setFormData] = useState({
         name: community.name,
         description: community.description,
@@ -96,6 +99,25 @@ export default function EditCommunityModal({ isOpen, onClose, onSuccess, communi
             toast.error(error.response?.data?.message || 'Failed to update community');
         } finally {
             setUpdating(false);
+        }
+    };
+
+    const handleDeleteCommunity = async () => {
+        if (!confirm(`Are you sure you want to delete "${community.name}"? This will permanently delete the community and all its posts. This action cannot be undone.`)) {
+            return;
+        }
+
+        try {
+            setDeleting(true);
+            await communityAPI.deleteCommunity(community._id);
+            toast.success(`Community "${community.name}" deleted successfully`);
+            triggerRefresh();
+            onClose();
+            navigate('/community');
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'Failed to delete community');
+        } finally {
+            setDeleting(false);
         }
     };
 
@@ -256,6 +278,39 @@ export default function EditCommunityModal({ isOpen, onClose, onSuccess, communi
                                 )}
                             </button>
                         </form>
+
+                        {/* Delete Community Section */}
+                        <div className="mt-6 pt-6 border-t border-red-500/20">
+                            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 space-y-3">
+                                <div className="flex items-start gap-3">
+                                    <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                                    <div className="flex-1">
+                                        <h3 className="text-sm font-bold text-red-400 mb-1">Delete Community</h3>
+                                        <p className="text-xs text-[#9ca3af] leading-relaxed">
+                                            This will permanently delete the community and all its posts. This action cannot be undone.
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={handleDeleteCommunity}
+                                    disabled={deleting}
+                                    className="w-full py-3 bg-red-600 hover:bg-red-700 rounded-xl text-white font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                                >
+                                    {deleting ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            Deleting...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Trash2 className="w-4 h-4" />
+                                            Delete Community
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
                     </motion.div>
                 </div>
             )}

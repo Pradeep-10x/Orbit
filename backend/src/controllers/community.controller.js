@@ -135,6 +135,45 @@ export const makeAdmin = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, null, "User promoted to admin"));
 });
 
+export const removeAdmin = asyncHandler(async (req, res) => {
+  const { userId } = req.body;
+  const { id } = req.params;
+
+  if (!userId) {
+    throw new ApiError(400, "User ID is required");
+  }
+
+  const community = await Community.findById(id);
+  if (!community) {
+    throw new ApiError(404, "Community not found");
+  }
+
+  // Only creator can remove admins
+  if (community.creator.toString() !== req.user._id.toString()) {
+    throw new ApiError(403, "Only creator can remove admins");
+  }
+
+  // Prevent removing the creator
+  if (community.creator.toString() === userId) {
+    throw new ApiError(400, "Cannot remove admin status from the community creator");
+  }
+
+  // Check if user is an admin
+  const wasAdmin = community.admins.some(a => a.toString() === userId);
+  if (!wasAdmin) {
+    throw new ApiError(400, "User is not an admin");
+  }
+
+  // Remove from admins
+  community.admins = community.admins.filter(
+    (adminId) => adminId.toString() !== userId
+  );
+
+  await community.save();
+
+  return res.status(200).json(new ApiResponse(200, null, "Admin status removed"));
+});
+
 export const leaveCommunity = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const community = await Community.findById(id);
@@ -426,4 +465,40 @@ export const removeUser = asyncHandler(async (req, res) => {
   await community.save();
 
   return res.status(200).json(new ApiResponse(200, null, "User removed from community"));
+});
+
+// Delete community (owner only)
+export const deleteCommunity = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const community = await Community.findById(id);
+  if (!community) {
+    throw new ApiError(404, "Community not found");
+  }
+
+  // Only creator can delete the community
+  if (community.creator.toString() !== req.user._id.toString()) {
+    throw new ApiError(403, "Only the creator can delete the community");
+  }
+
+  // Delete all related posts and comments
+  const { CommunityPost } = await import("../models/communityPost.model.js");
+  const { CommunityComment } = await import("../models/communityComment.model.js");
+
+  // Delete all posts in this community
+  const posts = await CommunityPost.find({ community: id });
+  const postIds = posts.map(post => post._id);
+
+  // Delete all comments on these posts
+  if (postIds.length > 0) {
+    await CommunityComment.deleteMany({ post: { $in: postIds } });
+  }
+
+  // Delete all posts
+  await CommunityPost.deleteMany({ community: id });
+
+  // Delete the community
+  await Community.findByIdAndDelete(id);
+
+  return res.status(200).json(new ApiResponse(200, null, "Community deleted successfully"));
 });

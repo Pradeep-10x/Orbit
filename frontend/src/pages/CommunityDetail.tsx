@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Users, Globe, Lock, Loader2, ArrowLeft, Plus, Image as ImageIcon, X, Send, Settings, Trash2, MessageSquare } from 'lucide-react';
+import { Users, Globe, Lock, Loader2, ArrowLeft, Plus, Image as ImageIcon, X, Send, Settings, Trash2, MessageSquare, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { communityAPI, communityPostAPI } from '@/lib/api';
 import { toast } from 'react-hot-toast';
@@ -354,6 +354,20 @@ export default function CommunityDetail() {
                                     title="Community Settings"
                                 >
                                     <Settings className="w-5 h-5 group-hover:rotate-90 transition-transform duration-500" />
+                                </button>
+                            )}
+                            {isJoined && !isOwner && (
+                                <button
+                                    onClick={handleJoinLeave}
+                                    disabled={joining}
+                                    className="p-2.5 glass-card rounded-xl text-red-400 hover:text-red-500 hover:bg-red-500/10 hover:border-red-500/30 transition-all group border border-red-400/20"
+                                    title="Leave Community"
+                                >
+                                    {joining ? (
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                    ) : (
+                                        <LogOut className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                                    )}
                                 </button>
                             )}
                         </div>

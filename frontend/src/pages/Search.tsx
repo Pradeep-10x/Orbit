@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search as SearchIcon, User, FileText, Users, Loader2, X, Image } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { toast } from 'react-hot-toast';
 import { userAPI, postAPI, communityAPI } from '@/lib/api';
 
 type SearchType = 'users' | 'posts' | 'communities';
@@ -87,10 +88,15 @@ export default function SearchPage() {
           }
         }
       } catch (error: any) {
+        console.error('Search failed:', error);
         if (error?.response?.status === 404 || error?.response?.status === 400) {
           setResults([]);
+        } else if (error?.response?.status === 401) {
+          toast.error('Please login to search');
+          setResults([]);
         } else {
-          console.error('Search failed:', error);
+          toast.error('Search failed. Please try again.');
+          setResults([]);
         }
       } finally {
         setLoading(false);

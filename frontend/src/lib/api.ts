@@ -130,6 +130,7 @@ export const communityAPI = {
   getJoined: () => api.get('/community/joined'),
   getCreated: () => api.get('/community/created'),
   search: (query: string) => api.get('/community/search', { params: { query } }),
+  searchCommunities: (query: string) => api.get('/community/search', { params: { query } }),
   create: (formData: FormData) => api.post('/community', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
@@ -140,8 +141,12 @@ export const communityAPI = {
     api.post(`/community/${communityId}/approve`, { userId }),
   makeAdmin: (communityId: string, userId: string) =>
     api.post(`/community/${communityId}/make-admin`, { userId }),
+  removeAdmin: (communityId: string, userId: string) =>
+    api.post(`/community/${communityId}/remove-admin`, { userId }),
   removeUser: (communityId: string, userId: string) =>
     api.post(`/community/${communityId}/remove-user`, { userId }),
+  deleteCommunity: (communityId: string) =>
+    api.delete(`/community/${communityId}`),
   update: (communityId: string, formData: FormData) =>
     api.patch(`/community/${communityId}`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
