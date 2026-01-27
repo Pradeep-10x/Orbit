@@ -18,7 +18,7 @@ A production-level frontend for ORBIT - A real-time digital orbit where creators
 - **Tailwind CSS v4** - Utility-first CSS framework
 - **Framer Motion** - Production-ready motion library
 - **Lucide React** - Beautiful icon library
-
+  //
 ## Getting Started
 
 ### Install Dependencies
