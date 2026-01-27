@@ -65,7 +65,7 @@ function App() {
     </Router>
   );
 }
-
+//root
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
