@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSocketStore } from '@/store/socketStore';
-import { useAuthStore } from '@/store/authStore';
-// @ts-expect-error - simple-peer doesn't have proper TypeScript exports
+
 import SimplePeer from 'simple-peer';
 
 interface UseWebRTCReturn {
@@ -19,7 +18,7 @@ interface UseWebRTCReturn {
 
 export const useWebRTC = (): UseWebRTCReturn => {
   const { socket } = useSocketStore();
-  const { user } = useAuthStore();
+
   const [isCallActive, setIsCallActive] = useState(false);
   const [isCallIncoming, setIsCallIncoming] = useState(false);
   const [callType, setCallType] = useState<'audio' | 'video' | null>(null);
@@ -30,8 +29,7 @@ export const useWebRTC = (): UseWebRTCReturn => {
   const incomingOfferRef = useRef<any>(null);
 
   const peerRef = useRef<SimplePeer.Instance | null>(null);
-  const localVideoRef = useRef<HTMLVideoElement | null>(null);
-  const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
+
 
   useEffect(() => {
     if (!socket) return;
@@ -187,7 +185,7 @@ export const useWebRTC = (): UseWebRTCReturn => {
       peerRef.current.destroy();
       peerRef.current = null;
     }
-    
+
     // Notify the other party before clearing state
     if (socket) {
       if (callerId) {
@@ -198,7 +196,7 @@ export const useWebRTC = (): UseWebRTCReturn => {
         socket.emit('call:end', { to: calleeId });
       }
     }
-    
+
     setIsCallActive(false);
     setIsCallIncoming(false);
     setCallType(null);

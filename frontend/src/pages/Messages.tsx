@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { messageAPI, communityAPI, communityChatAPI } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { useSocketStore } from '@/store/socketStore';
@@ -45,7 +45,7 @@ export default function MessagesPage() {
   const { user } = useAuthStore();
   const { socket, onlineUsers } = useSocketStore();
   const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
+
   const communityId = searchParams.get('communityId');
   const {
     isCallActive,
@@ -105,7 +105,7 @@ export default function MessagesPage() {
       console.log('Received community message:', message);
       const currentCommunityChat = selectedCommunityChatRef.current;
       const messageCommunityId = message.community?._id || message.community;
-      
+
       if (currentCommunityChat?._id === messageCommunityId) {
         setMessages((prev) => {
           // Check if message already exists to avoid duplicates
@@ -131,8 +131,8 @@ export default function MessagesPage() {
             : chat
         );
         // Only update if something actually changed to prevent unnecessary re-renders
-        const changed = prev.some((chat, idx) => 
-          chat._id === messageCommunityId && 
+        const changed = prev.some((chat, idx) =>
+          chat._id === messageCommunityId &&
           (chat.lastMessage !== updated[idx].lastMessage || chat.updatedAt !== updated[idx].updatedAt)
         );
         return changed ? updated : prev;
@@ -273,7 +273,7 @@ export default function MessagesPage() {
         );
 
         console.log('Community message response:', response.data);
-        
+
         if (response.data?.data) {
           const newMessage = response.data.data;
           // Optimistically add message to UI (WebSocket will also send it)
@@ -439,8 +439,8 @@ export default function MessagesPage() {
             <button
               onClick={() => setActiveTab('direct')}
               className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${activeTab === 'direct'
-                  ? 'bg-[#7c3aed] text-white'
-                  : 'text-[#9ca3af] hover:text-[#e5e7eb]'
+                ? 'bg-[#7c3aed] text-white'
+                : 'text-[#9ca3af] hover:text-[#e5e7eb]'
                 }`}
             >
               <MessageCircle className="w-4 h-4" />
@@ -449,8 +449,8 @@ export default function MessagesPage() {
             <button
               onClick={() => setActiveTab('community')}
               className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${activeTab === 'community'
-                  ? 'bg-[#7c3aed] text-white'
-                  : 'text-[#9ca3af] hover:text-[#e5e7eb]'
+                ? 'bg-[#7c3aed] text-white'
+                : 'text-[#9ca3af] hover:text-[#e5e7eb]'
                 }`}
             >
               <Users className="w-4 h-4" />
@@ -986,14 +986,14 @@ export default function MessagesPage() {
                     {communityDetails.members && communityDetails.members.length > 0 && (
                       <div className="space-y-2">
                         <div className="text-xs font-semibold text-[#9ca3af] uppercase tracking-wider px-2">
-                          Members ({communityDetails.members.filter((m: any) => 
-                            m._id !== communityDetails.creator?._id && 
+                          Members ({communityDetails.members.filter((m: any) =>
+                            m._id !== communityDetails.creator?._id &&
                             !communityDetails.admins?.some((a: any) => a._id === m._id)
                           ).length})
                         </div>
                         {communityDetails.members
-                          .filter((member: any) => 
-                            member._id !== communityDetails.creator?._id && 
+                          .filter((member: any) =>
+                            member._id !== communityDetails.creator?._id &&
                             !communityDetails.admins?.some((a: any) => a._id === member._id)
                           )
                           .map((member: any) => (

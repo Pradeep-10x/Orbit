@@ -13,8 +13,7 @@ import {
   Globe,
   Lock,
   Shield,
-  Info,
-  Calendar,
+
   X,
   Plus,
   Search,
@@ -105,7 +104,7 @@ export default function CommunityLiveOrbitPanel() {
         };
         setActivities(prev => [newActivity, ...prev].slice(0, 8));
       }
-      
+
       // Refresh communities if we're on the feed page
       if (!communityId) {
         fetchCommunities();
@@ -286,12 +285,12 @@ export default function CommunityLiveOrbitPanel() {
       e.stopPropagation();
     }
     if (!communityId || !confirm('Are you sure you want to remove this user from the community?')) return;
-    
+
     try {
       setRemovingUserId(userId);
       await communityAPI.removeUser(communityId, userId);
       toast.success('User removed from community');
-      
+
       // Refresh community data
       const updated = await communityAPI.getCommunity(communityId);
       setCurrentCommunity(updated.data?.data || null);
@@ -309,12 +308,12 @@ export default function CommunityLiveOrbitPanel() {
       e.stopPropagation();
     }
     if (!communityId) return;
-    
+
     const isAdmin = isMemberAdmin(userId);
-    
+
     try {
       setMakingAdminUserId(userId);
-      
+
       if (isAdmin) {
         await communityAPI.removeAdmin(communityId, userId);
         toast.success('Admin status removed');
@@ -322,7 +321,7 @@ export default function CommunityLiveOrbitPanel() {
         await communityAPI.makeAdmin(communityId, userId);
         toast.success('User promoted to admin');
       }
-      
+
       // Refresh community data
       const updated = await communityAPI.getCommunity(communityId);
       setCurrentCommunity(updated.data?.data || null);
@@ -635,7 +634,7 @@ export default function CommunityLiveOrbitPanel() {
                       const creatorId = currentCommunity.creator?._id || (typeof currentCommunity.creator === 'string' ? currentCommunity.creator : '');
                       const isCreator = memberId === creatorId;
                       const canManage = isAdminOrOwner && !isCreator;
-                      
+
                       return (
                         <div
                           key={memberId}
@@ -787,85 +786,85 @@ export default function CommunityLiveOrbitPanel() {
                   const creatorId = currentCommunity.creator?._id || (typeof currentCommunity.creator === 'string' ? currentCommunity.creator : '');
                   return adminId !== creatorId;
                 }).length > 0 && (
-                  <>
-                    <div className="px-4 py-2 mt-4 text-[10px] font-bold text-[#6b7280] uppercase tracking-widest">Admins</div>
-                    {currentCommunity.admins
-                      .filter((a: any) => {
-                        const adminId = a._id || a;
-                        const creatorId = currentCommunity.creator?._id || (typeof currentCommunity.creator === 'string' ? currentCommunity.creator : '');
-                        return adminId !== creatorId;
-                      })
-                      .map((admin: any) => {
-                        const adminId = admin._id || admin;
-                        const creatorId = currentCommunity.creator?._id || (typeof currentCommunity.creator === 'string' ? currentCommunity.creator : '');
-                        const isCreator = adminId === creatorId;
-                        const canManage = isAdminOrOwner && !isCreator;
-                        
-                        return (
-                          <div
-                            key={adminId}
-                            className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-colors group"
-                          >
-                            <Link
-                              to={`/profile/${admin.username}`}
-                              onClick={() => setShowMembersModal(false)}
-                              className="flex items-center gap-3 flex-1"
+                    <>
+                      <div className="px-4 py-2 mt-4 text-[10px] font-bold text-[#6b7280] uppercase tracking-widest">Admins</div>
+                      {currentCommunity.admins
+                        .filter((a: any) => {
+                          const adminId = a._id || a;
+                          const creatorId = currentCommunity.creator?._id || (typeof currentCommunity.creator === 'string' ? currentCommunity.creator : '');
+                          return adminId !== creatorId;
+                        })
+                        .map((admin: any) => {
+                          const adminId = admin._id || admin;
+                          const creatorId = currentCommunity.creator?._id || (typeof currentCommunity.creator === 'string' ? currentCommunity.creator : '');
+                          const isCreator = adminId === creatorId;
+                          const canManage = isAdminOrOwner && !isCreator;
+
+                          return (
+                            <div
+                              key={adminId}
+                              className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-colors group"
                             >
-                              <div className="w-10 h-10 rounded-full border-2 border-[rgba(168,85,247,0.3)] p-0.5 overflow-hidden">
-                                <img
-                                  src={admin.avatar || "/default-avatar.jpg"}
-                                  alt={admin.username}
-                                  className="w-full h-full rounded-full object-cover"
-                                />
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="font-bold text-white group-hover:text-[#a855f7] transition-colors">
-                                  u/{admin.username}
+                              <Link
+                                to={`/profile/${admin.username}`}
+                                onClick={() => setShowMembersModal(false)}
+                                className="flex items-center gap-3 flex-1"
+                              >
+                                <div className="w-10 h-10 rounded-full border-2 border-[rgba(168,85,247,0.3)] p-0.5 overflow-hidden">
+                                  <img
+                                    src={admin.avatar || "/default-avatar.jpg"}
+                                    alt={admin.username}
+                                    className="w-full h-full rounded-full object-cover"
+                                  />
                                 </div>
-                                <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">
-                                  Admin
-                                </span>
-                              </div>
-                            </Link>
-                            {canManage && (
-                              <div className="flex items-center gap-2 shrink-0">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleToggleAdmin(adminId, e);
-                                  }}
-                                  disabled={makingAdminUserId === adminId}
-                                  className="p-2 text-[#06b6d4] hover:text-[#22d3ee] hover:bg-[#06b6d4]/10 rounded-lg transition-colors"
-                                  title="Remove admin"
-                                >
-                                  {makingAdminUserId === adminId ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                  ) : (
-                                    <ShieldOff className="w-4 h-4" />
-                                  )}
-                                </button>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleRemoveUser(adminId, e);
-                                  }}
-                                  disabled={removingUserId === adminId}
-                                  className="p-2 text-red-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
-                                  title="Remove from community"
-                                >
-                                  {removingUserId === adminId ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                  ) : (
-                                    <Trash2 className="w-4 h-4" />
-                                  )}
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                  </>
-                )}
+                                <div className="flex items-center gap-2">
+                                  <div className="font-bold text-white group-hover:text-[#a855f7] transition-colors">
+                                    u/{admin.username}
+                                  </div>
+                                  <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-[10px] font-bold text-[#9ca3af] uppercase tracking-wider">
+                                    Admin
+                                  </span>
+                                </div>
+                              </Link>
+                              {canManage && (
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleToggleAdmin(adminId, e);
+                                    }}
+                                    disabled={makingAdminUserId === adminId}
+                                    className="p-2 text-[#06b6d4] hover:text-[#22d3ee] hover:bg-[#06b6d4]/10 rounded-lg transition-colors"
+                                    title="Remove admin"
+                                  >
+                                    {makingAdminUserId === adminId ? (
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                      <ShieldOff className="w-4 h-4" />
+                                    )}
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRemoveUser(adminId, e);
+                                    }}
+                                    disabled={removingUserId === adminId}
+                                    className="p-2 text-red-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                                    title="Remove from community"
+                                  >
+                                    {removingUserId === adminId ? (
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                      <Trash2 className="w-4 h-4" />
+                                    )}
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                    </>
+                  )}
 
                 {/* Members Section */}
                 <div className="px-4 py-2 mt-4 text-[10px] font-bold text-[#6b7280] uppercase tracking-widest">Members</div>
@@ -880,7 +879,7 @@ export default function CommunityLiveOrbitPanel() {
                     const creatorId = currentCommunity.creator?._id || (typeof currentCommunity.creator === 'string' ? currentCommunity.creator : '');
                     const isCreator = memberId === creatorId;
                     const canManage = isAdminOrOwner && !isCreator;
-                    
+
                     return (
                       <div
                         key={memberId}

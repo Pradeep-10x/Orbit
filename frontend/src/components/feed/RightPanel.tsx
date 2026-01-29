@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
-import { Shield, Users, LogOut, User, CheckCircle2, Search, Loader2, X, MessageSquare } from 'lucide-react';
+import { Shield, Users, LogOut, User, CheckCircle2, Search, Loader2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { userAPI, communityAPI } from '@/lib/api';
 
